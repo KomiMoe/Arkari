@@ -51,6 +51,7 @@
 #include "llvm/Transforms/Vectorize/LoopVectorize.h"
 #include "llvm/Transforms/Vectorize/SLPVectorizer.h"
 #include "llvm/Transforms/Vectorize/VectorCombine.h"
+#include "llvm/Transforms/Obfuscation/ObfuscationPassManager.h"
 
 using namespace llvm;
 
@@ -696,6 +697,7 @@ void PassManagerBuilder::populateModulePassManager(
   // If all optimizations are disabled, just run the always-inline pass and,
   // if enabled, the function merging pass.
   if (OptLevel == 0) {
+    MPM.add(createObfuscationPassManager());
     addPGOInstrPasses(MPM);
     if (Inliner) {
       MPM.add(Inliner);
@@ -787,6 +789,7 @@ void PassManagerBuilder::populateModulePassManager(
   MPM.add(createPromoteMemoryToRegisterPass());
 
   MPM.add(createDeadArgEliminationPass()); // Dead argument elimination
+  MPM.add(createObfuscationPassManager());
 
   MPM.add(createInstructionCombiningPass()); // Clean up after IPCP & DAE
   addExtensionsToPM(EP_Peephole, MPM);

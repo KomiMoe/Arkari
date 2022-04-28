@@ -244,6 +244,7 @@
 #include "llvm/Transforms/Vectorize/LoopVectorize.h"
 #include "llvm/Transforms/Vectorize/SLPVectorizer.h"
 #include "llvm/Transforms/Vectorize/VectorCombine.h"
+#include "llvm/Transforms/Obfuscation/ObfuscationPassManager.h"
 
 using namespace llvm;
 
@@ -1592,6 +1593,7 @@ Error PassBuilder::parseModulePassPipeline(ModulePassManager &MPM,
 // pre-populate the analysis managers with target-specific stuff?
 Error PassBuilder::parsePassPipeline(ModulePassManager &MPM,
                                      StringRef PipelineText) {
+  MPM.addPass(ObfuscationPassManagerPass());
   auto Pipeline = parsePipelineText(PipelineText);
   if (!Pipeline || Pipeline->empty())
     return make_error<StringError>(

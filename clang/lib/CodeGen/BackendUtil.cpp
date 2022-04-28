@@ -999,6 +999,8 @@ void EmitAssemblyHelper::EmitAssemblyWithLegacyPassManager(
   if (TM)
     TheModule->setDataLayout(TM->createDataLayout());
 
+  errs() << TheModule->getName() << "\n\n";
+
   DebugifyCustomPassManager PerModulePasses;
   DebugInfoPerPassMap DIPreservationMap;
   if (CodeGenOpts.EnableDIPreservationVerify) {
@@ -1556,6 +1558,8 @@ void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
     return;
   if (TM)
     TheModule->setDataLayout(TM->createDataLayout());
+
+  errs() << TheModule->getName() << "\n\n";
 
   // Before executing passes, print the final values of the LLVM options.
   cl::PrintOptionValues();
