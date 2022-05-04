@@ -31,7 +31,7 @@ run:
 
 mkdir build_ninja
 cd build_ninja
-cmake -DCMAKE_BUILD_TYPE=(Debug, Release, RelWithDebInfo, MinSizeRel)(自己选一个) -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_PROJECTS="clang;lld"(如果不想要lld的话删掉";lld") -G "Ninja" ../llvm
+cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_PROJECTS="clang;lld;clang-tools-extra" -G "Ninja" ../llvm
 ninja
 
 ```
