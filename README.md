@@ -6,9 +6,8 @@ Yet another llvm based obfuscator based on [goron](https://github.com/amimo/goro
  - 间接跳转,并加密跳转目标(-mllvm -irobf-indbr)
  - 间接函数调用,并加密目标函数地址(-mllvm -irobf-icall)
  - 间接全局变量引用,并加密变量地址(-mllvm -irobf-indgv)
- - 字符串(c string)加密功能(-mllvm -irobf-cse)
  - 过程相关控制流平坦混淆(-mllvm -irobf-cff)
- - 全部 ( -mllvm -irobf-indbr -mllvm -irobf-icall -mllvm -irobf-indgv -mllvm -irobf-cse -mllvm -irobf-cff )
+ - 全部 ( -mllvm -irobf-indbr -mllvm -irobf-icall -mllvm -irobf-indgv -mllvm -irobf-cff )
 
 对比于goron的改进：
  - 由于作者明确表示暂时(至少几万年吧)不会跟进llvm版本和不会继续更新. 所以有了这个版本(https://github.com/amimo/goron/issues/29)
@@ -31,7 +30,7 @@ run:
 
 mkdir build_ninja
 cd build_ninja
-cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_PROJECTS="clang;lld;clang-tools-extra" -G "Ninja" ../llvm
+cmake -DCMAKE_CXX_FLAGS="/EHsc /utf-8" -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld;lldb" -G "Ninja" ../llvm
 ninja
 
 ```
