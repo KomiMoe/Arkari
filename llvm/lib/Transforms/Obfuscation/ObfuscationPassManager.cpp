@@ -109,12 +109,9 @@ struct ObfuscationPassManager : public ModulePass {
   }
 
   bool runOnModule(Module &M) override {
-
-    if (EnableIRStringEncryption) {
-      errs() << "\"-irobf-cse\" WAS OBSOLETED ,PLEASE REMOVE IT IN COMMAND.\n";
-    }
+    
     if (EnableIndirectBr || EnableIndirectCall || EnableIndirectGV ||
-        EnableIRFlattening) {
+        EnableIRFlattening || EnableIRStringEncryption) {
       EnableIRObfusaction = true;
     }
 
@@ -124,10 +121,10 @@ struct ObfuscationPassManager : public ModulePass {
 
     std::unique_ptr<ObfuscationOptions> Options(getOptions());
 
-    if (Options->EnableCSE) {
-      errs() << "\"CSE\" WAS OBSOLETED ,PLEASE REMOVE IT IN OPTIONS.\n";
+    if (EnableIRStringEncryption || Options->EnableCSE) {
+      add(llvm::createStringEncryptionPass(true, Options.get()));
     }
-    
+
     add(llvm::createFlatteningPass(EnableIRFlattening || Options->EnableCFF, Options.get()));
     add(llvm::createIndirectBranchPass(
         EnableIndirectBr || Options->EnableIndirectBr, Options.get()));

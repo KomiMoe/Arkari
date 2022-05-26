@@ -101,7 +101,8 @@ bool StringEncryption::runOnModule(Module &M) {
   LLVMContext &Ctx = M.getContext();
   ConstantInt *Zero = ConstantInt::get(Type::getInt32Ty(Ctx), 0);
   for (GlobalVariable &GV : M.globals()) {
-    if (!GV.isConstant() || !GV.hasInitializer()) {
+    if (!GV.isConstant() || !GV.hasInitializer() ||
+      GV.hasDLLExportStorageClass() || GV.isDLLImportDependent()) {
       continue;
     }
     Constant *Init = GV.getInitializer();
@@ -258,7 +259,7 @@ Function *StringEncryption::buildDecryptFunction(Module *M, const StringEncrypti
   IRB.SetInsertPoint(Enter);
   ConstantInt *KeySize = ConstantInt::get(Type::getInt32Ty(Ctx), Entry->EncKey.size());
   Value *EncPtr = IRB.CreateInBoundsGEP(
-      Data->getType()->getScalarType()->getPointerElementType(), Data, KeySize);
+      Data->getType()->getPointerElementType(), Data, KeySize);
   Value *DecStatus = IRB.CreateLoad(
       Entry->DecStatus->getType()->getPointerElementType(), Entry->DecStatus);
   Value *IsDecrypted = IRB.CreateICmpEQ(DecStatus, IRB.getInt32(1));
@@ -269,20 +270,20 @@ Function *StringEncryption::buildDecryptFunction(Module *M, const StringEncrypti
   LoopCounter->addIncoming(IRB.getInt32(0), Enter);
 
   Value *EncCharPtr = IRB.CreateInBoundsGEP(
-      EncPtr->getType()->getScalarType()->getPointerElementType(), EncPtr,
+      EncPtr->getType()->getPointerElementType(), EncPtr,
       LoopCounter);
   Value *EncChar = IRB.CreateLoad(
       EncCharPtr->getType()->getPointerElementType(), EncCharPtr);
   Value *KeyIdx = IRB.CreateURem(LoopCounter, KeySize);
 
   Value *KeyCharPtr = IRB.CreateInBoundsGEP(
-      Data->getType()->getScalarType()->getPointerElementType(), Data, KeyIdx);
+      Data->getType()->getPointerElementType(), Data, KeyIdx);
   Value *KeyChar = IRB.CreateLoad(
       KeyCharPtr->getType()->getPointerElementType(), KeyCharPtr);
 
   Value *DecChar = IRB.CreateXor(EncChar, KeyChar);
   Value *DecCharPtr = IRB.CreateInBoundsGEP(
-      PlainString->getType()->getScalarType()->getPointerElementType(),
+      PlainString->getType()->getPointerElementType(),
       PlainString, LoopCounter);
   IRB.CreateStore(DecChar, DecCharPtr);
 
@@ -356,7 +357,7 @@ void StringEncryption::lowerGlobalConstantArray(ConstantArray *CA, IRBuilder<> &
   for (unsigned i = 0, e = CA->getNumOperands(); i != e; ++i) {
     Constant *CV = CA->getOperand(i);
     Value *GEP =
-        IRB.CreateGEP(Ptr->getType()->getScalarType()->getPointerElementType(),
+        IRB.CreateGEP(Ptr->getType()->getPointerElementType(),
                       Ptr, {IRB.getInt32(0), IRB.getInt32(i)});
     lowerGlobalConstant(CV, IRB, GEP);
   }
@@ -365,7 +366,7 @@ void StringEncryption::lowerGlobalConstantArray(ConstantArray *CA, IRBuilder<> &
 void StringEncryption::lowerGlobalConstantStruct(ConstantStruct *CS, IRBuilder<> &IRB, Value *Ptr) {
   for (unsigned i = 0, e = CS->getNumOperands(); i != e; ++i) {
     Value *GEP =
-        IRB.CreateGEP(Ptr->getType()->getScalarType()->getPointerElementType(),
+        IRB.CreateGEP(Ptr->getType()->getPointerElementType(),
                       Ptr, {IRB.getInt32(0), IRB.getInt32(i)});
     lowerGlobalConstant(CS->getOperand(i), IRB, GEP);
   }
@@ -383,7 +384,13 @@ bool StringEncryption::processConstantStringUse(Function *F) {
   bool Changed = false;
   for (BasicBlock &BB : *F) {
     DecryptedGV.clear();
+    if (BB.isEHPad()) {
+      continue;
+    }
     for (Instruction &Inst: BB) {
+      if (Inst.isEHPad()) {
+        continue;
+      }
       if (PHINode *PHI = dyn_cast<PHINode>(&Inst)) {
         for (unsigned int i = 0; i < PHI->getNumIncomingValues(); ++i) {
           if (GlobalVariable *GV = dyn_cast<GlobalVariable>(PHI->getIncomingValue(i))) {
@@ -413,7 +420,6 @@ bool StringEncryption::processConstantStringUse(Function *F) {
                 Value *OutBuf = IRB.CreateBitCast(Entry->DecGV, IRB.getInt8PtrTy());
                 Value *Data = IRB.CreateInBoundsGEP(
                     EncryptedStringTable->getType()
-                        ->getScalarType()
                         ->getPointerElementType(),
                     EncryptedStringTable,
                     {IRB.getInt32(0), IRB.getInt32(Entry->Offset)});
@@ -454,7 +460,6 @@ bool StringEncryption::processConstantStringUse(Function *F) {
                 Value *OutBuf = IRB.CreateBitCast(Entry->DecGV, IRB.getInt8PtrTy());
                 Value *Data = IRB.CreateInBoundsGEP(
                     EncryptedStringTable->getType()
-                        ->getScalarType()
                         ->getPointerElementType(),
                     EncryptedStringTable,
                     {IRB.getInt32(0), IRB.getInt32(Entry->Offset)});
