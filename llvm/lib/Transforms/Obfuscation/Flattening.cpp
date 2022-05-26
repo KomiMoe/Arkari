@@ -75,11 +75,7 @@ bool Flattening::flatten(Function *f) {
   // END OF SCRAMBLER
 
   // Lower switch
-#if LLVM_VERSION_MAJOR * 10 + LLVM_VERSION_MINOR >= 90
   FunctionPass *lower = createLegacyLowerSwitchPass();
-#else
-  FunctionPass *lower = createLowerSwitchPass();
-#endif
   lower->runOnFunction(*f);
 
   // Save all original BB
