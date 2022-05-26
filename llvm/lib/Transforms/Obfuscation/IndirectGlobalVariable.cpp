@@ -100,7 +100,8 @@ struct IndirectGlobalVariable : public FunctionPass {
       Instruction *Inst = &*I;
       if (isa<LandingPadInst>(Inst) || isa<CleanupPadInst>(Inst) ||
           isa<CatchPadInst>(Inst) || isa<CatchReturnInst>(Inst) ||
-          isa<CatchSwitchInst>(Inst)) {
+          isa<CatchSwitchInst>(Inst) || isa<ResumeInst>(Inst) || 
+          isa<CallInst>(Inst)) {
         continue;
       }
       if (PHINode *PHI = dyn_cast<PHINode>(Inst)) {
@@ -116,7 +117,7 @@ struct IndirectGlobalVariable : public FunctionPass {
 
             Value *Idx = ConstantInt::get(Type::getInt32Ty(Ctx), GVNumbering[GV]);
             Value *GEP = IRB.CreateGEP(
-                GVars->getType()->getScalarType()->getPointerElementType(),
+                GVars->getType()->getPointerElementType(),
                 GVars,
                 {Zero, Idx});
             LoadInst *EncGVAddr = IRB.CreateLoad(
@@ -126,12 +127,12 @@ struct IndirectGlobalVariable : public FunctionPass {
 
             Value *Secret = IRB.CreateSub(X, MySecret);
             Value *GVAddr = IRB.CreateGEP(
-                EncGVAddr->getType()->getScalarType()->getPointerElementType(),
+                EncGVAddr->getType()->getPointerElementType(),
                 EncGVAddr,
                 Secret);
             GVAddr = IRB.CreateBitCast(GVAddr, GV->getType());
-            GVAddr->setName("IndGV");
-            Inst->replaceUsesOfWith(GV, GVAddr);
+            GVAddr->setName("IndGV0_");
+            PHI->setIncomingValue(i, GVAddr);
           }
         }
       } else {
@@ -144,7 +145,7 @@ struct IndirectGlobalVariable : public FunctionPass {
             IRBuilder<> IRB(Inst);
             Value *Idx = ConstantInt::get(Type::getInt32Ty(Ctx), GVNumbering[GV]);
             Value *GEP = IRB.CreateGEP(
-                GVars->getType()->getScalarType()->getPointerElementType(),
+                GVars->getType()->getPointerElementType(),
                 GVars,
                 {Zero, Idx});
             LoadInst *EncGVAddr = IRB.CreateLoad(
@@ -155,11 +156,11 @@ struct IndirectGlobalVariable : public FunctionPass {
 
             Value *Secret = IRB.CreateSub(X, MySecret);
             Value *GVAddr = IRB.CreateGEP(
-                EncGVAddr->getType()->getScalarType()->getPointerElementType(),
+                EncGVAddr->getType()->getPointerElementType(),
                 EncGVAddr,
                 Secret);
             GVAddr = IRB.CreateBitCast(GVAddr, GV->getType());
-            GVAddr->setName("IndGV");
+            GVAddr->setName("IndGV1_");
             Inst->replaceUsesOfWith(GV, GVAddr);
           }
         }
