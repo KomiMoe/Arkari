@@ -143,7 +143,7 @@ bool StringEncryption::runOnModule(Module &M) {
   // build initialization function for supported constant string users
   for (GlobalVariable *GV: ConstantStringUsers) {
     if (isValidToEncrypt(GV)) {
-      Type *EltType = GV->getType()->getElementType();
+      Type *EltType = GV->getType()->getPointerElementType();
       ConstantAggregateZero *ZeroInit = ConstantAggregateZero::get(EltType);
       GlobalVariable *DecGV = new GlobalVariable(M, EltType, false, GlobalValue::PrivateLinkage,
                                                  ZeroInit, "dec_" + GV->getName());
