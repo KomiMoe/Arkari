@@ -1593,7 +1593,6 @@ Error PassBuilder::parseModulePassPipeline(ModulePassManager &MPM,
 // pre-populate the analysis managers with target-specific stuff?
 Error PassBuilder::parsePassPipeline(ModulePassManager &MPM,
                                      StringRef PipelineText) {
-  MPM.addPass(ObfuscationPassManagerPass());
   auto Pipeline = parsePipelineText(PipelineText);
   if (!Pipeline || Pipeline->empty())
     return make_error<StringError>(
