@@ -90,11 +90,12 @@ struct IndirectGlobalVariable : public FunctionPass {
 
     uint32_t V = RandomEngine.get_uint32_t() & ~3;
     ConstantInt *EncKey = ConstantInt::get(Type::getInt32Ty(Ctx), V, false);
+    ConstantInt *EncKey1 = ConstantInt::get(Type::getInt32Ty(Ctx), -V, false);
 
     Value *MySecret = ConstantInt::get(Type::getInt32Ty(Ctx), 0, true);
 
     ConstantInt *Zero = ConstantInt::get(Type::getInt32Ty(Ctx), 0);
-    GlobalVariable *GVars = getIndirectGlobalVariables(Fn, EncKey);
+    GlobalVariable *GVars = getIndirectGlobalVariables(Fn, EncKey1);
 
     for (inst_iterator I = inst_begin(Fn), E = inst_end(Fn); I != E; ++I) {
       Instruction *Inst = &*I;
@@ -123,9 +124,8 @@ struct IndirectGlobalVariable : public FunctionPass {
             LoadInst *EncGVAddr = IRB.CreateLoad(
                 GEP->getType(), GEP,
                 GV->getName());
-            Constant *X = ConstantExpr::getSub(Zero, EncKey);
 
-            Value *Secret = IRB.CreateSub(X, MySecret);
+            Value *Secret = IRB.CreateAdd(EncKey, MySecret);
             Value *GVAddr = IRB.CreateGEP(
               Type::getInt8Ty(Ctx),
                 EncGVAddr,
@@ -152,9 +152,8 @@ struct IndirectGlobalVariable : public FunctionPass {
                 GEP->getType(),
                 GEP,
                 GV->getName());
-            Constant *X = ConstantExpr::getSub(Zero, EncKey);
 
-            Value *Secret = IRB.CreateSub(X, MySecret);
+            Value *Secret = IRB.CreateAdd(EncKey, MySecret);
             Value *GVAddr = IRB.CreateGEP(
               Type::getInt8Ty(Ctx),
                 EncGVAddr,
