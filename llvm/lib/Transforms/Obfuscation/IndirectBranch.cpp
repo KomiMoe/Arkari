@@ -139,11 +139,8 @@ struct IndirectBranch : public FunctionPass {
             GEP->getType(),
             GEP,
             "EncDestAddr");
-        // Use IPO context to compute the encryption key
-        // X = FuncSecret - EncKey
-        Constant *X = ConstantExpr::getAdd(Zero, EncKey);
         // -EncKey = X - FuncSecret
-        Value *DecKey = IRB.CreateAdd(X, MySecret);
+        Value *DecKey = IRB.CreateAdd(EncKey, MySecret);
         Value *DestAddr = IRB.CreateGEP(
           Type::getInt8Ty(Ctx),
             EncDestAddr, DecKey);

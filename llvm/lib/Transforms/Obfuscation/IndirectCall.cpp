@@ -102,11 +102,12 @@ struct IndirectCall : public FunctionPass {
 
     uint32_t V = RandomEngine.get_uint32_t() & ~3;
     ConstantInt *EncKey = ConstantInt::get(Type::getInt32Ty(Ctx), V, false);
+    ConstantInt *EncKey1 = ConstantInt::get(Type::getInt32Ty(Ctx), -V, false);
 
     Value *MySecret = ConstantInt::get(Type::getInt32Ty(Ctx), 0, true);
 
     ConstantInt *Zero = ConstantInt::get(Type::getInt32Ty(Ctx), 0);
-    GlobalVariable *Targets = getIndirectCallees(Fn, EncKey);
+    GlobalVariable *Targets = getIndirectCallees(Fn, EncKey1);
 
     for (auto CI : CallSites) {
       SmallVector<Value *, 8> Args;
@@ -128,7 +129,6 @@ struct IndirectCall : public FunctionPass {
       LoadInst *EncDestAddr = IRB.CreateLoad(
           GEP->getType(), GEP,
           CI->getName());
-      Constant *X = ConstantExpr::getSub(Zero, EncKey);
 
       const AttributeList &CallPAL = CB->getAttributes();
       auto I = CB->arg_begin();
@@ -145,7 +145,7 @@ struct IndirectCall : public FunctionPass {
         ArgAttrVec.push_back(CallPAL.getParamAttrs(i));
       }
 
-      Value *Secret = IRB.CreateSub(X, MySecret);
+      Value *Secret = IRB.CreateAdd(EncKey, MySecret);
       Value *DestAddr = IRB.CreateGEP(Type::getInt8Ty(Ctx),
           EncDestAddr, Secret);
 
