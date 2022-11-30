@@ -112,11 +112,12 @@ struct IndirectBranch : public FunctionPass {
 
     uint32_t V = RandomEngine.get_uint32_t() & ~3;
     ConstantInt *EncKey = ConstantInt::get(Type::getInt32Ty(Ctx), V, false);
+    ConstantInt *EncKey1 = ConstantInt::get(Type::getInt32Ty(Ctx), -V, false);
 
     Value *MySecret = ConstantInt::get(Type::getInt32Ty(Ctx), 0, true);
 
     ConstantInt *Zero = ConstantInt::get(Type::getInt32Ty(Ctx), 0);
-    GlobalVariable *DestBBs = getIndirectTargets(Fn, EncKey);
+    GlobalVariable *DestBBs = getIndirectTargets(Fn, EncKey1);
 
     for (auto &BB : Fn) {
       auto *BI = dyn_cast<BranchInst>(BB.getTerminator());
@@ -140,9 +141,9 @@ struct IndirectBranch : public FunctionPass {
             "EncDestAddr");
         // Use IPO context to compute the encryption key
         // X = FuncSecret - EncKey
-        Constant *X = ConstantExpr::getSub(Zero, EncKey);
+        Constant *X = ConstantExpr::getAdd(Zero, EncKey);
         // -EncKey = X - FuncSecret
-        Value *DecKey = IRB.CreateSub(X, MySecret);
+        Value *DecKey = IRB.CreateAdd(X, MySecret);
         Value *DestAddr = IRB.CreateGEP(
           Type::getInt8Ty(Ctx),
             EncDestAddr, DecKey);
