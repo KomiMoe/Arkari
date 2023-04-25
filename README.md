@@ -19,6 +19,7 @@ Yet another llvm based obfuscator based on [goron](https://github.com/amimo/goro
  - 修复了混淆后SEH爆炸的问题
  - 修复了dll导入的全局变量会被混淆导致丢失__impl前缀的问题
  - 修复了某些情况下配合llvm2019(2022)插件会导致参数重复添加无法编译的问题
+ - 修复了x86间接调用炸堆栈的问题
  - ...
  ```
 ## 编译
