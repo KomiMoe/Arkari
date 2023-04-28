@@ -12,6 +12,7 @@
 using namespace llvm;
 namespace {
 struct IndirectGlobalVariable : public FunctionPass {
+  unsigned pointerSize;
   static char ID;
   bool flag;
   
@@ -19,12 +20,14 @@ struct IndirectGlobalVariable : public FunctionPass {
   std::map<GlobalVariable *, unsigned> GVNumbering;
   std::vector<GlobalVariable *> GlobalVariables;
   CryptoUtils RandomEngine;
-  IndirectGlobalVariable() : FunctionPass(ID) {
+  IndirectGlobalVariable(unsigned pointerSize) : FunctionPass(ID) {
+    this->pointerSize = pointerSize;
     this->flag = false;
     this->Options = nullptr;
   }
 
-  IndirectGlobalVariable(bool flag, ObfuscationOptions *Options) : FunctionPass(ID) {
+  IndirectGlobalVariable(unsigned pointerSize, bool flag, ObfuscationOptions *Options) : FunctionPass(ID) {
+    this->pointerSize = pointerSize;
     this->flag = flag;
     this->Options = Options;
   }
@@ -88,13 +91,18 @@ struct IndirectGlobalVariable : public FunctionPass {
       return false;
     }
 
-    uint32_t V = RandomEngine.get_uint32_t() & ~3;
-    ConstantInt *EncKey = ConstantInt::get(Type::getInt32Ty(Ctx), V, false);
-    ConstantInt *EncKey1 = ConstantInt::get(Type::getInt32Ty(Ctx), -V, false);
+    uint64_t V = RandomEngine.get_uint64_t();
+    IntegerType* intType = Type::getInt32Ty(Ctx);
+    if (pointerSize == 8) {
+      intType = Type::getInt64Ty(Ctx);
+    }
 
-    Value *MySecret = ConstantInt::get(Type::getInt32Ty(Ctx), 0, true);
+    ConstantInt *EncKey = ConstantInt::get(intType, V, false);
+    ConstantInt *EncKey1 = ConstantInt::get(intType, -V, false);
 
-    ConstantInt *Zero = ConstantInt::get(Type::getInt32Ty(Ctx), 0);
+    Value *MySecret = ConstantInt::get(intType, 0, true);
+
+    ConstantInt *Zero = ConstantInt::get(intType, 0);
     GlobalVariable *GVars = getIndirectGlobalVariables(Fn, EncKey1);
 
     for (inst_iterator I = inst_begin(Fn), E = inst_end(Fn); I != E; ++I) {
@@ -116,7 +124,7 @@ struct IndirectGlobalVariable : public FunctionPass {
             Instruction *IP = PHI->getIncomingBlock(i)->getTerminator();
             IRBuilder<> IRB(IP);
 
-            Value *Idx = ConstantInt::get(Type::getInt32Ty(Ctx), GVNumbering[GV]);
+            Value *Idx = ConstantInt::get(intType, GVNumbering[GV]);
             Value *GEP = IRB.CreateGEP(
                 GVars->getValueType(),
                 GVars,
@@ -143,7 +151,7 @@ struct IndirectGlobalVariable : public FunctionPass {
             }
 
             IRBuilder<> IRB(Inst);
-            Value *Idx = ConstantInt::get(Type::getInt32Ty(Ctx), GVNumbering[GV]);
+            Value *Idx = ConstantInt::get(intType, GVNumbering[GV]);
             Value *GEP = IRB.CreateGEP(
                 GVars->getValueType(),
                 GVars,
@@ -173,10 +181,10 @@ struct IndirectGlobalVariable : public FunctionPass {
 } // namespace llvm
 
 char IndirectGlobalVariable::ID = 0;
-FunctionPass *llvm::createIndirectGlobalVariablePass() { return new IndirectGlobalVariable(); }
-FunctionPass *llvm::createIndirectGlobalVariablePass(bool flag,
+FunctionPass *llvm::createIndirectGlobalVariablePass(unsigned pointerSize) { return new IndirectGlobalVariable(pointerSize); }
+FunctionPass *llvm::createIndirectGlobalVariablePass(unsigned pointerSize, bool flag,
                                                      ObfuscationOptions *Options) {
-  return new IndirectGlobalVariable(flag, Options);
+  return new IndirectGlobalVariable(pointerSize, flag, Options);
 }
 
 INITIALIZE_PASS(IndirectGlobalVariable, "indgv", "Enable IR Indirect Global Variable Obfuscation", false, false)

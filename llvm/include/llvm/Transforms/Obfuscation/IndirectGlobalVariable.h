@@ -7,8 +7,8 @@ class FunctionPass;
 class PassRegistry;
 struct ObfuscationOptions;
 
-FunctionPass* createIndirectGlobalVariablePass();
-FunctionPass* createIndirectGlobalVariablePass(bool flag, ObfuscationOptions *Options);
+FunctionPass* createIndirectGlobalVariablePass(unsigned pointerSize);
+FunctionPass* createIndirectGlobalVariablePass(unsigned pointerSize, bool flag, ObfuscationOptions *Options);
 void initializeIndirectGlobalVariablePass(PassRegistry &Registry);
 
 }

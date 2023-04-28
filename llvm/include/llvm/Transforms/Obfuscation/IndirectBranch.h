@@ -7,8 +7,8 @@ class FunctionPass;
 class PassRegistry;
 struct ObfuscationOptions;
 
-FunctionPass* createIndirectBranchPass();
-FunctionPass* createIndirectBranchPass(bool flag, ObfuscationOptions *Options);
+FunctionPass* createIndirectBranchPass(unsigned pointerSize);
+FunctionPass* createIndirectBranchPass(unsigned pointerSize, bool flag, ObfuscationOptions *Options);
 void initializeIndirectBranchPass(PassRegistry &Registry);
 
 }

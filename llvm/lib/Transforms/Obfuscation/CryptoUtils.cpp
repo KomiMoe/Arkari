@@ -549,6 +549,47 @@ unsigned CryptoUtils::scramble32(const unsigned in, const char key[16]) {
   return tmpA ^ tmpB;
 }
 
+unsigned long long CryptoUtils::scramble64(const unsigned in, const char key[16])
+{
+  assert(key != NULL && "CryptoUtils::scramble key=NULL");
+
+  unsigned long long tmpA, tmpB;
+
+  // Orr, Nathan or Adi can probably break it, but who cares?
+
+  // Round 1
+  tmpA = 0x0;
+  tmpA ^= AES_PRECOMP_TE0[((in >> 24) ^ key[0]) & 0xFF];
+  tmpA ^= AES_PRECOMP_TE1[((in >> 16) ^ key[1]) & 0xFF];
+  tmpA ^= AES_PRECOMP_TE2[((in >> 8) ^ key[2]) & 0xFF];
+  tmpA ^= AES_PRECOMP_TE3[((in >> 0) ^ key[3]) & 0xFF];
+
+  // Round 2
+  tmpB = 0x0;
+  tmpB ^= AES_PRECOMP_TE0[((tmpA >> 24) ^ key[4]) & 0xFF];
+  tmpB ^= AES_PRECOMP_TE1[((tmpA >> 16) ^ key[5]) & 0xFF];
+  tmpB ^= AES_PRECOMP_TE2[((tmpA >> 8) ^ key[6]) & 0xFF];
+  tmpB ^= AES_PRECOMP_TE3[((tmpA >> 0) ^ key[7]) & 0xFF];
+
+  // Round 3
+  tmpA = 0x0;
+  tmpA ^= AES_PRECOMP_TE0[((tmpB >> 24) ^ key[8]) & 0xFF];
+  tmpA ^= AES_PRECOMP_TE1[((tmpB >> 16) ^ key[9]) & 0xFF];
+  tmpA ^= AES_PRECOMP_TE2[((tmpB >> 8) ^ key[10]) & 0xFF];
+  tmpA ^= AES_PRECOMP_TE3[((tmpB >> 0) ^ key[11]) & 0xFF];
+
+  // Round 4
+  tmpB = 0x0;
+  tmpB ^= AES_PRECOMP_TE0[((tmpA >> 24) ^ key[12]) & 0xFF];
+  tmpB ^= AES_PRECOMP_TE1[((tmpA >> 16) ^ key[13]) & 0xFF];
+  tmpB ^= AES_PRECOMP_TE2[((tmpA >> 8) ^ key[14]) & 0xFF];
+  tmpB ^= AES_PRECOMP_TE3[((tmpA >> 0) ^ key[15]) & 0xFF];
+
+  LOAD64H(tmpA, key);
+
+  return tmpA ^ tmpB;
+}
+
 void CryptoUtils::prng_seed(const std::string _seed) {
   unsigned char s[16];
   unsigned int i = 0;

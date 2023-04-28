@@ -7,8 +7,8 @@ class FunctionPass;
 class PassRegistry;
 struct ObfuscationOptions;
 
-FunctionPass* createIndirectCallPass();
-FunctionPass* createIndirectCallPass(bool flag, ObfuscationOptions *Options);
+FunctionPass* createIndirectCallPass(unsigned pointerSize);
+FunctionPass* createIndirectCallPass(unsigned pointerSize, bool flag, ObfuscationOptions *Options);
 void initializeIndirectCallPass(PassRegistry &Registry);
 
 }

@@ -16,18 +16,21 @@ namespace {
 struct IndirectCall : public FunctionPass {
   static char ID;
   bool flag;
+  unsigned pointerSize;
   
   ObfuscationOptions *Options;
   std::map<Function *, unsigned> CalleeNumbering;
   std::vector<CallInst *> CallSites;
   std::vector<Function *> Callees;
   CryptoUtils RandomEngine;
-  IndirectCall() : FunctionPass(ID) {
+  IndirectCall(unsigned pointerSize) : FunctionPass(ID) {
+    this->pointerSize = pointerSize;
     this->flag = false;
     this->Options = nullptr;
   }
 
-  IndirectCall(bool flag, ObfuscationOptions *Options) : FunctionPass(ID) {
+  IndirectCall(unsigned pointerSize, bool flag, ObfuscationOptions *Options) : FunctionPass(ID) {
+    this->pointerSize = pointerSize;
     this->flag = flag;
     this->Options = Options;
   }
@@ -100,13 +103,17 @@ struct IndirectCall : public FunctionPass {
       return false;
     }
 
-    uint32_t V = RandomEngine.get_uint32_t() & ~3;
-    ConstantInt *EncKey = ConstantInt::get(Type::getInt32Ty(Ctx), V, false);
-    ConstantInt *EncKey1 = ConstantInt::get(Type::getInt32Ty(Ctx), -V, false);
+    uint64_t V = RandomEngine.get_uint64_t();
+    IntegerType *intType = Type::getInt32Ty(Ctx);
+    if (pointerSize == 8) {
+      intType = Type::getInt64Ty(Ctx);
+    }
+    ConstantInt *EncKey = ConstantInt::get(intType, V, false);
+    ConstantInt *EncKey1 = ConstantInt::get(intType, -V, false);
 
-    Value *MySecret = ConstantInt::get(Type::getInt32Ty(Ctx), 0, true);
+    Value *MySecret = ConstantInt::get(intType, 0, true);
 
-    ConstantInt *Zero = ConstantInt::get(Type::getInt32Ty(Ctx), 0);
+    ConstantInt *Zero = ConstantInt::get(intType, 0);
     GlobalVariable *Targets = getIndirectCallees(Fn, EncKey1);
 
     for (auto CI : CallSites) {
@@ -122,7 +129,7 @@ struct IndirectCall : public FunctionPass {
       Args.clear();
       ArgAttrVec.clear();
 
-      Value *Idx = ConstantInt::get(Type::getInt32Ty(Ctx), CalleeNumbering[CB->getCalledFunction()]);
+      Value *Idx = ConstantInt::get(intType, CalleeNumbering[CB->getCalledFunction()]);
       Value *GEP = IRB.CreateGEP(
           Targets->getValueType(), Targets,
           {Zero, Idx});
@@ -161,10 +168,10 @@ struct IndirectCall : public FunctionPass {
 } // namespace llvm
 
 char IndirectCall::ID = 0;
-FunctionPass *llvm::createIndirectCallPass() { return new IndirectCall(); }
-FunctionPass *llvm::createIndirectCallPass(bool flag,
+FunctionPass *llvm::createIndirectCallPass(unsigned pointerSize) { return new IndirectCall(pointerSize); }
+FunctionPass *llvm::createIndirectCallPass(unsigned pointerSize, bool flag,
                                              ObfuscationOptions *Options) {
-  return new IndirectCall(flag, Options);
+  return new IndirectCall(pointerSize, flag, Options);
 }
 
 INITIALIZE_PASS(IndirectCall, "icall", "Enable IR Indirect Call Obfuscation", false, false)

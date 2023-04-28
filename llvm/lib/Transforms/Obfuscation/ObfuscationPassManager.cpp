@@ -119,17 +119,17 @@ struct ObfuscationPassManager : public ModulePass {
     }
 
     std::unique_ptr<ObfuscationOptions> Options(getOptions());
-
+    unsigned pointerSize = M.getDataLayout().getTypeAllocSize(PointerType::getUnqual(M.getContext()));
     if (EnableIRStringEncryption || Options->EnableCSE) {
       add(llvm::createStringEncryptionPass(true, Options.get()));
     }
 
-    add(llvm::createFlatteningPass(EnableIRFlattening || Options->EnableCFF, Options.get()));
-    add(llvm::createIndirectBranchPass(
+    add(llvm::createFlatteningPass(pointerSize, EnableIRFlattening || Options->EnableCFF, Options.get()));
+    add(llvm::createIndirectBranchPass(pointerSize,
         EnableIndirectBr || Options->EnableIndirectBr, Options.get()));
-    add(llvm::createIndirectCallPass(EnableIndirectCall ||
+    add(llvm::createIndirectCallPass(pointerSize, EnableIndirectCall ||
                                          Options->EnableIndirectCall, Options.get()));
-    add(llvm::createIndirectGlobalVariablePass(
+    add(llvm::createIndirectGlobalVariablePass(pointerSize,
         EnableIndirectGV || Options->EnableIndirectGV, Options.get()));
 
     bool Changed = run(M);

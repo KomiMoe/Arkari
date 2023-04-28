@@ -227,6 +227,7 @@ public:
 
   // Scramble a 32-bit value depending on a 128-bit value
   unsigned scramble32(const unsigned in, const char key[16]);
+  unsigned long long scramble64(const unsigned in, const char key[16]);
 
   int sha256(const char *msg, unsigned char *hash);
 

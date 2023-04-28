@@ -15,6 +15,7 @@
 using namespace llvm;
 namespace {
 struct IndirectBranch : public FunctionPass {
+  unsigned pointerSize;
   static char ID;
   bool flag;
   
@@ -22,12 +23,14 @@ struct IndirectBranch : public FunctionPass {
   std::map<BasicBlock *, unsigned> BBNumbering;
   std::vector<BasicBlock *> BBTargets;        //all conditional branch targets
   CryptoUtils RandomEngine;
-  IndirectBranch() : FunctionPass(ID) {
+  IndirectBranch(unsigned pointerSize) : FunctionPass(ID) {
+    this->pointerSize = pointerSize;
     this->flag = false;
     this->Options = nullptr;
   }
 
-  IndirectBranch(bool flag, ObfuscationOptions *Options) : FunctionPass(ID) {
+  IndirectBranch(unsigned pointerSize, bool flag, ObfuscationOptions *Options) : FunctionPass(ID) {
+    this->pointerSize = pointerSize;
     this->flag = flag;
     this->Options = Options;
   }
@@ -110,13 +113,17 @@ struct IndirectBranch : public FunctionPass {
       return false;
     }
 
-    uint32_t V = RandomEngine.get_uint32_t() & ~3;
-    ConstantInt *EncKey = ConstantInt::get(Type::getInt32Ty(Ctx), V, false);
-    ConstantInt *EncKey1 = ConstantInt::get(Type::getInt32Ty(Ctx), -V, false);
+    uint64_t V = RandomEngine.get_uint64_t();
+    IntegerType* intType = Type::getInt32Ty(Ctx);
+    if (pointerSize == 8) {
+      intType = Type::getInt64Ty(Ctx);
+    }
+    ConstantInt *EncKey = ConstantInt::get(intType, V, false);
+    ConstantInt *EncKey1 = ConstantInt::get(intType, -V, false);
 
-    Value *MySecret = ConstantInt::get(Type::getInt32Ty(Ctx), 0, true);
+    Value *MySecret = ConstantInt::get(intType, 0, true);
 
-    ConstantInt *Zero = ConstantInt::get(Type::getInt32Ty(Ctx), 0);
+    ConstantInt *Zero = ConstantInt::get(intType, 0);
     GlobalVariable *DestBBs = getIndirectTargets(Fn, EncKey1);
 
     for (auto &BB : Fn) {
@@ -128,8 +135,8 @@ struct IndirectBranch : public FunctionPass {
         Value *Idx;
         Value *TIdx, *FIdx;
 
-        TIdx = ConstantInt::get(Type::getInt32Ty(Ctx), BBNumbering[BI->getSuccessor(0)]);
-        FIdx = ConstantInt::get(Type::getInt32Ty(Ctx), BBNumbering[BI->getSuccessor(1)]);
+        TIdx = ConstantInt::get(intType, BBNumbering[BI->getSuccessor(0)]);
+        FIdx = ConstantInt::get(intType, BBNumbering[BI->getSuccessor(1)]);
         Idx = IRB.CreateSelect(Cond, TIdx, FIdx);
 
         Value *GEP = IRB.CreateGEP(
@@ -159,9 +166,9 @@ struct IndirectBranch : public FunctionPass {
 } // namespace llvm
 
 char IndirectBranch::ID = 0;
-FunctionPass *llvm::createIndirectBranchPass() { return new IndirectBranch(); }
-FunctionPass *llvm::createIndirectBranchPass(bool flag,
+FunctionPass *llvm::createIndirectBranchPass(unsigned pointerSize) { return new IndirectBranch(pointerSize); }
+FunctionPass *llvm::createIndirectBranchPass(unsigned pointerSize, bool flag,
                                              ObfuscationOptions *Options) {
-  return new IndirectBranch(flag, Options);
+  return new IndirectBranch(pointerSize, flag, Options);
 }
 INITIALIZE_PASS(IndirectBranch, "indbr", "Enable IR Indirect Branch Obfuscation", false, false)
