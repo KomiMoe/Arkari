@@ -30,6 +30,7 @@ jobs:
       build-dir: ${{ steps.validate-tag.outputs.build-dir }}
       rc-flags: ${{ steps.validate-tag.outputs.rc-flags }}
       ref: ${{ steps.validate-tag.outputs.ref }}
+      upload: ${{ steps.validate-tag.outputs.upload }}
 
     steps:
     - name: Checkout LLVM
@@ -106,6 +107,7 @@ jobs:
     - name: Upload binaries
       if: ${{ always() && needs.prepare.outputs.upload == 'true' }}
       run: |
+        sudo apt install python3-github
         ${{ needs.prepare.outputs.build-dir }}/llvm-project/llvm/utils/release/github-upload-release.py \
         --token ${{ github.token }} \
         --release ${{ needs.prepare.outputs.release-version }} \
