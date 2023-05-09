@@ -356,15 +356,16 @@ void StringEncryption::lowerGlobalConstantArray(ConstantArray *CA, IRBuilder<> &
     Constant *CV = CA->getOperand(i);
     Value *GEP = IRB.CreateGEP(Ty,
                       Ptr, {IRB.getInt32(0), IRB.getInt32(i)});
-    lowerGlobalConstant(CV, IRB, GEP, Ty);
+    lowerGlobalConstant(CV, IRB, GEP, CV->getType());
   }
 }
 
 void StringEncryption::lowerGlobalConstantStruct(ConstantStruct *CS, IRBuilder<> &IRB, Value *Ptr, Type *Ty) {
   for (unsigned i = 0, e = CS->getNumOperands(); i != e; ++i) {
+    Constant* CV = CS->getOperand(i);
     Value *GEP = IRB.CreateGEP(Ty,
                       Ptr, {IRB.getInt32(0), IRB.getInt32(i)});
-    lowerGlobalConstant(CS->getOperand(i), IRB, GEP, Ty);
+    lowerGlobalConstant(CV, IRB, GEP, CV->getType());
   }
 }
 
