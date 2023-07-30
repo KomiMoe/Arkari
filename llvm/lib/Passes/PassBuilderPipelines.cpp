@@ -132,6 +132,7 @@
 #include "llvm/Transforms/Vectorize/LoopVectorize.h"
 #include "llvm/Transforms/Vectorize/SLPVectorizer.h"
 #include "llvm/Transforms/Vectorize/VectorCombine.h"
+#include "llvm/Transforms/Obfuscation/ObfuscationPassManager.h"
 
 using namespace llvm;
 
@@ -1475,6 +1476,7 @@ PassBuilder::buildPerModuleDefaultPipeline(OptimizationLevel Level,
 
   if (LTOPreLink)
     addRequiredLTOPreLinkPasses(MPM);
+  MPM.addPass(ObfuscationPassManagerPass());
   return MPM;
 }
 
@@ -1539,7 +1541,7 @@ PassBuilder::buildThinLTOPreLinkDefaultPipeline(OptimizationLevel Level) {
   addAnnotationRemarksPass(MPM);
 
   addRequiredLTOPreLinkPasses(MPM);
-
+  MPM.addPass(ObfuscationPassManagerPass());
   return MPM;
 }
 
@@ -1581,6 +1583,7 @@ ModulePassManager PassBuilder::buildThinLTODefaultPipeline(
     // globals in the object file.
     MPM.addPass(EliminateAvailableExternallyPass());
     MPM.addPass(GlobalDCEPass());
+    MPM.addPass(ObfuscationPassManagerPass());
     return MPM;
   }
 
@@ -1594,7 +1597,7 @@ ModulePassManager PassBuilder::buildThinLTODefaultPipeline(
 
   // Emit annotation remarks.
   addAnnotationRemarksPass(MPM);
-
+  MPM.addPass(ObfuscationPassManagerPass());
   return MPM;
 }
 
@@ -2017,7 +2020,7 @@ ModulePassManager PassBuilder::buildO0DefaultPipeline(OptimizationLevel Level,
     addRequiredLTOPreLinkPasses(MPM);
 
   MPM.addPass(createModuleToFunctionPassAdaptor(AnnotationRemarksPass()));
-
+  MPM.addPass(ObfuscationPassManagerPass());
   return MPM;
 }
 
