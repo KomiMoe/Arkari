@@ -186,6 +186,9 @@ C Language Changes
     _Generic(i, int : 0, const int : 1); // Warns about unreachable code, the
                                          // result is 0, not 1.
     _Generic(typeof(i), int : 0, const int : 1); // Result is 1, not 0.
+- ``structs``, ``unions``, and ``arrays`` that are const may now be used as
+  constant expressions.  This change is more consistent with the behavior of
+  GCC.
 
 C2x Feature Support
 ^^^^^^^^^^^^^^^^^^^
@@ -287,6 +290,10 @@ New Compiler Flags
   individual relocations in the program will generally increase.
 - ``-f[no-]assume-unique-vtables`` controls whether Clang assumes that each
   class has a unique vtable address, when that is required by the ABI.
+- ``-print-multi-flags-experimental`` prints the flags used for multilib
+  selection. See `the multilib docs <https://clang.llvm.org/docs/Multilib.html>`_
+  for more details.
+
 
 Deprecated Compiler Flags
 -------------------------
@@ -470,6 +477,10 @@ Improvements to Clang's diagnostics
 
 Bug Fixes in This Version
 -------------------------
+- Fixed an issue where a class template specialization whose declaration is
+  instantiated in one module and whose definition is instantiated in another
+  module may end up with members associated with the wrong declaration of the
+  class, which can result in miscompiles in some cases.
 
 - Added a new diagnostic warning group
   ``-Wdeprecated-redundant-constexpr-static-def``, under the existing
@@ -880,6 +891,10 @@ Arm and AArch64 Support
   ``-mfloat-abi=hard`` or a triple ending in ``hf``) would silently
   use the soft-float ABI instead.
 
+- Clang now emits ``-Wunsupported-abi`` if the hard-float ABI is specified
+  and the selected processor lacks floating point registers.
+  (`#55755 <https://github.com/llvm/llvm-project/issues/55755>`_)
+
 - Clang builtin ``__arithmetic_fence`` and the command line option ``-fprotect-parens``
   are now enabled for AArch64.
 
@@ -895,6 +910,9 @@ Arm and AArch64 Support
 - Fix a crash when ``preserve_all`` calling convention is used on AArch64.
   `Issue 58145 <https://github.com/llvm/llvm-project/issues/58145>`_
 
+- Clang now warns if invalid target triples ``--target=aarch64-*-eabi`` or
+  ``--target=arm-*-elf`` are specified.
+
 Windows Support
 ^^^^^^^^^^^^^^^
 
@@ -903,6 +921,8 @@ LoongArch Support
 
 - Patchable function entry (``-fpatchable-function-entry``) is now supported
   on LoongArch.
+- An ABI mismatch between GCC and Clang related to the handling of empty structs
+  in C++ parameter passing under ``lp64d`` ABI was fixed.
 - Unaligned memory accesses can be toggled by ``-m[no-]unaligned-access`` or the
   aliases ``-m[no-]strict-align``.
 - Non ``$``-prefixed GPR names (e.g. ``r4`` and ``a0``) are allowed in inlineasm
@@ -927,6 +947,21 @@ RISC-V Support
 - The rules for ordering of extensions in ``-march`` strings were relaxed. A
   canonical ordering is no longer enforced on ``z*``, ``s*``, and ``x*``
   prefixed extensions.
+- An ABI mismatch between GCC and Clang related to the handling of empty
+  structs in C++ parameter passing under the hard floating point calling
+  conventions was fixed.
+- Support the RVV intrinsics v0.12. Please checkout `the RVV C intrinsics
+  specification
+  <https://github.com/riscv-non-isa/rvv-intrinsic-doc/releases/tag/v0.12.0>`_.
+  It is expected there won't be any incompatibility from this v0.12 to the
+  specifications planned for v1.0.
+
+  * Added vector intrinsics that models control to the rounding mode
+    (``frm`` and ``vxrm``) for the floating-point instruction intrinsics and the 
+    fixed-point instruction intrinsics.
+  * Added intrinsics for reinterpret cast between vector boolean and vector
+    integer ``m1`` value
+  * Removed the ``vread_csr`` and ``vwrite_csr`` intrinsics
 
 CUDA/HIP Language Changes
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1115,6 +1150,12 @@ The following methods have been added:
 
 - ``clang_Location_isInSystemHeader`` exposed via the ``is_in_system_header``
   property of the `Location` class.
+
+Configurable Multilib
+---------------------
+The BareMetal toolchain for AArch64 & ARM now supports multilib, configurable
+via ``multilib.yaml``. See `the multilib docs <https://clang.llvm.org/docs/Multilib.html>`_
+for more details.
 
 Additional Information
 ======================
