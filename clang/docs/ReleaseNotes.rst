@@ -309,10 +309,6 @@ Modified Compiler Flags
   directory (``/tmp`` on \*NIX systems, if none of the environment variables
   TMPDIR, TMP, and TEMP are specified).
 
-- ``-ffat-lto-objects`` can now be used to emit object files with both object
-  code and LLVM bitcode. Previously this flag was ignored for GCC compatibility.
-  (`See related patch <https://reviews.llvm.org/D146777>`_).
-
 Removed Compiler Flags
 -------------------------
 - The deprecated flag `-fmodules-ts` is removed. Please use ``-std=c++20``
@@ -481,7 +477,6 @@ Bug Fixes in This Version
   instantiated in one module and whose definition is instantiated in another
   module may end up with members associated with the wrong declaration of the
   class, which can result in miscompiles in some cases.
-
 - Added a new diagnostic warning group
   ``-Wdeprecated-redundant-constexpr-static-def``, under the existing
   ``-Wdeprecated`` group. This controls warnings about out-of-line definitions
@@ -704,6 +699,9 @@ Bug Fixes in This Version
   (`#64005 <https://github.com/llvm/llvm-project/issues/64005>_`)
 - Fix crash on nested templated class with template function call.
   (`#61159 <https://github.com/llvm/llvm-project/issues/61159>_`)
+- Fix a hang on valid C code passing a function type as an argument to
+  ``typeof`` to form a function declaration.
+  (`#64713 <https://github.com/llvm/llvm-project/issues/64713>_`)
 
 Bug Fixes to Compiler Builtins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -962,6 +960,10 @@ RISC-V Support
   * Added intrinsics for reinterpret cast between vector boolean and vector
     integer ``m1`` value
   * Removed the ``vread_csr`` and ``vwrite_csr`` intrinsics
+- Default ``-fdebug-dwarf-version=`` is downgraded to 4 to work around
+  incorrect DWARF related to ULEB128 and linker compatibility before
+  ``R_RISCV_SET_ULEB128`` becomes more widely supported.
+  (`D157663 <https://reviews.llvm.org/D157663>`_).
 
 CUDA/HIP Language Changes
 ^^^^^^^^^^^^^^^^^^^^^^^^^
