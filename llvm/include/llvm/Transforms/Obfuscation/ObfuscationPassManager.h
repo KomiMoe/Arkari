@@ -21,12 +21,12 @@ class ObfuscationPassManagerPass
 public:
   PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM) {
     ModulePass *OPM = createObfuscationPassManager();
-    OPM->runOnModule(M);
-    if (OPM->doFinalization(M)) {
-      delete OPM;
+    bool Changed = OPM->runOnModule(M);
+    OPM->doFinalization(M);
+    delete OPM;
+    if (Changed) {
       return PreservedAnalyses::none();
     }
-    delete OPM;
     return PreservedAnalyses::all();
   }
 };

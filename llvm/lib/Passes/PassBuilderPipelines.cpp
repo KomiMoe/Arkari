@@ -1445,7 +1445,7 @@ PassBuilder::buildPerModuleDefaultPipeline(OptimizationLevel Level,
     return buildO0DefaultPipeline(Level, LTOPreLink);
 
   ModulePassManager MPM;
-
+  MPM.addPass(ObfuscationPassManagerPass());
   // Convert @llvm.global.annotations to !annotation metadata.
   MPM.addPass(Annotation2MetadataPass());
 
@@ -1476,7 +1476,6 @@ PassBuilder::buildPerModuleDefaultPipeline(OptimizationLevel Level,
 
   if (LTOPreLink)
     addRequiredLTOPreLinkPasses(MPM);
-  MPM.addPass(ObfuscationPassManagerPass());
   return MPM;
 }
 
@@ -1498,7 +1497,7 @@ PassBuilder::buildThinLTOPreLinkDefaultPipeline(OptimizationLevel Level) {
     return buildO0DefaultPipeline(Level, /*LTOPreLink*/true);
 
   ModulePassManager MPM;
-
+  MPM.addPass(ObfuscationPassManagerPass());
   // Convert @llvm.global.annotations to !annotation metadata.
   MPM.addPass(Annotation2MetadataPass());
 
@@ -1541,7 +1540,6 @@ PassBuilder::buildThinLTOPreLinkDefaultPipeline(OptimizationLevel Level) {
   addAnnotationRemarksPass(MPM);
 
   addRequiredLTOPreLinkPasses(MPM);
-  MPM.addPass(ObfuscationPassManagerPass());
   return MPM;
 }
 
@@ -1583,7 +1581,6 @@ ModulePassManager PassBuilder::buildThinLTODefaultPipeline(
     // globals in the object file.
     MPM.addPass(EliminateAvailableExternallyPass());
     MPM.addPass(GlobalDCEPass());
-    MPM.addPass(ObfuscationPassManagerPass());
     return MPM;
   }
 
@@ -1597,7 +1594,6 @@ ModulePassManager PassBuilder::buildThinLTODefaultPipeline(
 
   // Emit annotation remarks.
   addAnnotationRemarksPass(MPM);
-  MPM.addPass(ObfuscationPassManagerPass());
   return MPM;
 }
 
@@ -1930,7 +1926,7 @@ ModulePassManager PassBuilder::buildO0DefaultPipeline(OptimizationLevel Level,
          "buildO0DefaultPipeline should only be used with O0");
 
   ModulePassManager MPM;
-
+  MPM.addPass(ObfuscationPassManagerPass());
   // Perform pseudo probe instrumentation in O0 mode. This is for the
   // consistency between different build modes. For example, a LTO build can be
   // mixed with an O0 prelink and an O2 postlink. Loading a sample profile in
@@ -2020,7 +2016,6 @@ ModulePassManager PassBuilder::buildO0DefaultPipeline(OptimizationLevel Level,
     addRequiredLTOPreLinkPasses(MPM);
 
   MPM.addPass(createModuleToFunctionPassAdaptor(AnnotationRemarksPass()));
-  MPM.addPass(ObfuscationPassManagerPass());
   return MPM;
 }
 
