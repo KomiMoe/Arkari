@@ -1,44 +1,57 @@
-# The LLVM Compiler Infrastructure
+# Arkari
+Yet another llvm based obfuscator based on [goron](https://github.com/amimo/goron).
 
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/llvm/llvm-project/badge)](https://securityscorecards.dev/viewer/?uri=github.com/llvm/llvm-project)
-[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8273/badge)](https://www.bestpractices.dev/projects/8273)
-[![libc++](https://github.com/llvm/llvm-project/actions/workflows/libcxx-build-and-test.yaml/badge.svg?branch=main&event=schedule)](https://github.com/llvm/llvm-project/actions/workflows/libcxx-build-and-test.yaml?query=event%3Aschedule)
+当前支持特性：
+ - 混淆过程间相关
+ - 间接跳转,并加密跳转目标(-mllvm -irobf-indbr)
+ - 间接函数调用,并加密目标函数地址(-mllvm -irobf-icall)
+ - 间接全局变量引用,并加密变量地址(-mllvm -irobf-indgv)
+ - 字符串(c string)加密功能(-mllvm -irobf-cse)
+ - 过程相关控制流平坦混淆(-mllvm -irobf-cff)
+ - 全部 (-mllvm -irobf-indbr -mllvm -irobf-icall -mllvm -irobf-indgv -mllvm -irobf-cse -mllvm -irobf-cff)
 
-Welcome to the LLVM project!
+对比于goron的改进：
+ - 由于作者明确表示暂时(至少几万年吧)不会跟进llvm版本和不会继续更新. 所以有了这个版本(https://github.com/amimo/goron/issues/29)
+ - 更新了llvm版本
+ - 编译时输出文件名, 防止憋死强迫症
+ - 修复了亿点点已知的bug
+ ```
+ - 修复了混淆后SEH爆炸的问题
+ - 修复了dll导入的全局变量会被混淆导致丢失__impl前缀的问题
+ - 修复了某些情况下配合llvm2019(2022)插件会导致参数重复添加无法编译的问题
+ - 修复了x86间接调用炸堆栈的问题
+ - ...
+ ```
+## 编译
 
-This repository contains the source code for LLVM, a toolkit for the
-construction of highly optimized compilers, optimizers, and run-time
-environments.
+ - Windows(use Ninja, Ninja YYDS):
+```
+install ninja in your PATH
+run x64(86) Native Tools Command Prompt for VS 2022(xx)
+run:
 
-The LLVM project has multiple components. The core of the project is
-itself called "LLVM". This contains all of the tools, libraries, and header
-files needed to process intermediate representations and convert them into
-object files. Tools include an assembler, disassembler, bitcode analyzer, and
-bitcode optimizer.
+mkdir build_ninja
+cd build_ninja
+cmake -DCMAKE_CXX_FLAGS="/utf-8" -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld;lldb" -G "Ninja" ../llvm
+ninja
 
-C-like languages use the [Clang](http://clang.llvm.org/) frontend. This
-component compiles C, C++, Objective-C, and Objective-C++ code into LLVM bitcode
--- and from there into object files, using LLVM.
+```
 
-Other components include:
-the [libc++ C++ standard library](https://libcxx.llvm.org),
-the [LLD linker](https://lld.llvm.org), and more.
+## 使用
+跟ollvm类似,可通过编译选项开启相应混淆.
+如启用间接跳转混淆
+```
+$ path_to_the/build/bin/clang -mllvm -irobf -mllvm --irobf-indbr test.c
+```
+对于使用autotools的工程
+```
+$ CC=path_to_the/build/bin/clang or CXX=path_to_the/build/bin/clang
+$ CFLAGS+="-mllvm -irobf -mllvm --irobf-indbr" or CXXFLAGS+="-mllvm -irobf -mllvm --irobf-indbr" (or any other obfuscation-related flags)
+$ ./configure
+$ make
+```
 
-## Getting the Source Code and Building LLVM
-
-Consult the
-[Getting Started with LLVM](https://llvm.org/docs/GettingStarted.html#getting-the-source-code-and-building-llvm)
-page for information on building and running LLVM.
-
-For information on how to contribute to the LLVM project, please take a look at
-the [Contributing to LLVM](https://llvm.org/docs/Contributing.html) guide.
-
-## Getting in touch
-
-Join the [LLVM Discourse forums](https://discourse.llvm.org/), [Discord
-chat](https://discord.gg/xS7Z362),
-[LLVM Office Hours](https://llvm.org/docs/GettingInvolved.html#office-hours) or
-[Regular sync-ups](https://llvm.org/docs/GettingInvolved.html#online-sync-ups).
-
-The LLVM project has adopted a [code of conduct](https://llvm.org/docs/CodeOfConduct.html) for
-participants to all modes of communication within the project.
+## 参考资源
++ [Goron](https://github.com/amimo/goron)
++ [Hikari](https://github.com/HikariObfuscator/Hikari)
++ [ollvm](https://github.com/obfuscator-llvm/obfuscator)
