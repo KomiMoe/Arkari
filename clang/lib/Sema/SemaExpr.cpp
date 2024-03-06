@@ -11142,7 +11142,8 @@ QualType Sema::CheckVectorOperands(ExprResult &LHS, ExprResult &RHS,
       if (VecType->getVectorKind() == VectorKind::SveFixedLengthData ||
           VecType->getVectorKind() == VectorKind::SveFixedLengthPredicate)
         return true;
-      if (VecType->getVectorKind() == VectorKind::RVVFixedLengthData) {
+      if (VecType->getVectorKind() == VectorKind::RVVFixedLengthData ||
+          VecType->getVectorKind() == VectorKind::RVVFixedLengthMask) {
         SVEorRVV = 1;
         return true;
       }
@@ -11173,7 +11174,8 @@ QualType Sema::CheckVectorOperands(ExprResult &LHS, ExprResult &RHS,
             SecondVecType->getVectorKind() ==
                 VectorKind::SveFixedLengthPredicate)
           return true;
-        if (SecondVecType->getVectorKind() == VectorKind::RVVFixedLengthData) {
+        if (SecondVecType->getVectorKind() == VectorKind::RVVFixedLengthData ||
+            SecondVecType->getVectorKind() == VectorKind::RVVFixedLengthMask) {
           SVEorRVV = 1;
           return true;
         }
@@ -14060,7 +14062,7 @@ inline QualType Sema::CheckLogicalOperands(ExprResult &LHS, ExprResult &RHS,
     Expr::EvalResult EVResult;
     if (RHS.get()->EvaluateAsInt(EVResult, Context)) {
       llvm::APSInt Result = EVResult.Val.getInt();
-      if ((getLangOpts().Bool && !RHS.get()->getType()->isBooleanType() &&
+      if ((getLangOpts().CPlusPlus && !RHS.get()->getType()->isBooleanType() &&
            !RHS.get()->getExprLoc().isMacroID()) ||
           (Result != 0 && Result != 1)) {
         Diag(Loc, diag::warn_logical_instead_of_bitwise)
@@ -18292,7 +18294,6 @@ void Sema::CheckUnusedVolatileAssignment(Expr *E) {
 }
 
 void Sema::MarkExpressionAsImmediateEscalating(Expr *E) {
-  assert(!FunctionScopes.empty() && "Expected a function scope");
   assert(getLangOpts().CPlusPlus20 &&
          ExprEvalContexts.back().InImmediateEscalatingFunctionContext &&
          "Cannot mark an immediate escalating expression outside of an "
@@ -18309,7 +18310,8 @@ void Sema::MarkExpressionAsImmediateEscalating(Expr *E) {
   } else {
     assert(false && "expected an immediately escalating expression");
   }
-  getCurFunction()->FoundImmediateEscalatingExpression = true;
+  if (FunctionScopeInfo *FI = getCurFunction())
+    FI->FoundImmediateEscalatingExpression = true;
 }
 
 ExprResult Sema::CheckForImmediateInvocation(ExprResult E, FunctionDecl *Decl) {

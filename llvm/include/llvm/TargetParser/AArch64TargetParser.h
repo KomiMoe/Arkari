@@ -478,7 +478,7 @@ inline constexpr ArchInfo ARMV8_1A  = { VersionTuple{8, 1}, AProfile, "armv8.1-a
 inline constexpr ArchInfo ARMV8_2A  = { VersionTuple{8, 2}, AProfile, "armv8.2-a", "+v8.2a", (ARMV8_1A.DefaultExts |
                                         AArch64::ExtensionBitset({AArch64::AEK_RAS}))};
 inline constexpr ArchInfo ARMV8_3A  = { VersionTuple{8, 3}, AProfile, "armv8.3-a", "+v8.3a", (ARMV8_2A.DefaultExts |
-                                        AArch64::ExtensionBitset({AArch64::AEK_RCPC, AArch64::AEK_JSCVT, AArch64::AEK_FCMA}))};
+                                        AArch64::ExtensionBitset({AArch64::AEK_FCMA, AArch64::AEK_JSCVT, AArch64::AEK_PAUTH, AArch64::AEK_RCPC}))};
 inline constexpr ArchInfo ARMV8_4A  = { VersionTuple{8, 4}, AProfile, "armv8.4-a", "+v8.4a", (ARMV8_3A.DefaultExts |
                                         AArch64::ExtensionBitset({AArch64::AEK_DOTPROD}))};
 inline constexpr ArchInfo ARMV8_5A  = { VersionTuple{8, 5}, AProfile, "armv8.5-a", "+v8.5a", (ARMV8_4A.DefaultExts)};
@@ -805,6 +805,12 @@ inline constexpr CpuInfo CpuInfos[] = {
          {AArch64::AEK_FP16, AArch64::AEK_RAND, AArch64::AEK_SM4,
           AArch64::AEK_SHA3, AArch64::AEK_SHA2, AArch64::AEK_AES,
           AArch64::AEK_MTE, AArch64::AEK_SB, AArch64::AEK_SSBS}))},
+    {"ampere1b", ARMV8_7A,
+     (AArch64::ExtensionBitset({AArch64::AEK_FP16, AArch64::AEK_RAND,
+                                AArch64::AEK_SM4, AArch64::AEK_SHA3,
+                                AArch64::AEK_SHA2, AArch64::AEK_AES,
+                                AArch64::AEK_MTE, AArch64::AEK_SB,
+                                AArch64::AEK_SSBS, AArch64::AEK_CSSC}))},
 };
 
 // An alias for a CPU.
@@ -813,7 +819,8 @@ struct CpuAlias {
   StringRef Name;
 };
 
-inline constexpr CpuAlias CpuAliases[] = {{"grace", "neoverse-v2"}};
+inline constexpr CpuAlias CpuAliases[] = {{"cobalt-100", "neoverse-n2"},
+                                          {"grace", "neoverse-v2"}};
 
 bool getExtensionFeatures(
     const AArch64::ExtensionBitset &Extensions,

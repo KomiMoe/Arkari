@@ -105,6 +105,14 @@ Changes to the AArch64 Backend
   Armv9.0a has the same features enabled as Armv8.5a, with the exception
   of crypto.
 
+* Assembler/disassembler support has been added for 2023 architecture
+  extensions.
+
+* Support has been added for Stack Clash Protection. During function frame
+  creation and dynamic stack allocations, the compiler will issue memory
+  accesses at reguilar intervals so that a guard area at the top of the stack
+  can't be skipped over.
+
 Changes to the AMDGPU Backend
 -----------------------------
 
@@ -156,6 +164,30 @@ Changes to the MIPS Backend
 Changes to the PowerPC Backend
 ------------------------------
 
+* LLJIT's JIT linker now defaults to JITLink on 64-bit ELFv2 targets.
+* Initial-exec TLS model is supported on AIX.
+* Implemented new resource based scheduling model of POWER7 and POWER8.
+* ``frexp`` libcall now references correct symbol name for ``fp128``.
+* Optimized materialization of 64-bit immediates, code generation of
+  ``vec_promote`` and atomics.
+* Global constant strings are pooled in the TOC under one entry to reduce the
+  number of entries in the TOC.
+* Added a number of missing Power10 extended mnemonics.
+* Added the SCV instruction.
+* Fixed register class for the paddi instruction.
+* Optimize VPERM and fix code order for swapping vector operands on LE.
+* Added various bug fixes and code gen improvements.
+
+AIX Support/improvements:
+
+* Support for a non-TOC-based access sequence for the local-exec TLS model (called small local-exec).
+* XCOFF toc-data peephole optimization and bug fixes.
+* Move less often used __ehinfo TOC entries to the end of the TOC section.
+* Fixed problems when the AIX libunwind unwinds starting from a signal handler
+  and the function that raised the signal happens to be a leaf function that
+  shares the stack frame with its caller or a leaf function that does not store
+  the stack frame backchain.
+
 Changes to the RISC-V Backend
 -----------------------------
 
@@ -181,6 +213,7 @@ Changes to the RISC-V Backend
   specification.
 * The Smepmp 1.0 extension is now supported.
 * ``-mcpu=sifive-p670`` was added.
+* Support for the Zicond extension is no longer experimental.
 
 Changes to the WebAssembly Backend
 ----------------------------------
@@ -308,6 +341,7 @@ Changes to the LLVM tools
 
 * llvm-symbolizer now treats invalid input as an address for which source
   information is not found.
+* Fixed big-endian support in llvm-symbolizer's DWARF location parser.
 * llvm-readelf now supports ``--extra-sym-info`` (``-X``) to display extra
   information (section name) when showing symbols.
 
@@ -318,6 +352,26 @@ Changes to the LLVM tools
 
 * llvm-objcopy now supports ``--gap-fill`` and ``--pad-to`` options, for
   ELF input and binary output files only.
+
+* Supported parsing XCOFF auxiliary symbols in obj2yaml.
+
+* ``llvm-ranlib`` now supports ``-X`` on AIX to specify the type of object file
+  ranlib should examine.
+
+* ``llvm-nm`` now supports ``--export-symbol`` to ignore the import symbol file.
+
+* llvm-rc and llvm-windres now accept file path references in ``.rc`` files
+  concatenated from multiple string literals.
+
+* The llvm-windres option ``--preprocessor`` now resolves its argument
+  in the PATH environment variable as expected, and options passed with
+  ``--preprocessor-arg`` are placed before the input file as they should
+  be.
+
+* The llvm-windres option ``--preprocessor`` has been updated with the
+  breaking behaviour change from GNU windres from binutils 2.36, where
+  the whole argument is considered as one path, not considered as a
+  sequence of tool name and parameters.
 
 Changes to LLDB
 ---------------------------------
@@ -359,9 +413,17 @@ Changes to LLDB
   fields are present, however this is not always possible or entirely
   accurate. If in doubt, refer to the numerical value.
 
+* On Windows, LLDB can now read the thread names.
+
 Changes to Sanitizers
 ---------------------
 * HWASan now defaults to detecting use-after-scope bugs.
+
+Changes to the Profile Runtime
+------------------------------
+
+* Public header ``profile/instr_prof_interface.h`` is added to declare four
+  API functions to fine tune profile collection.
 
 Other Changes
 -------------

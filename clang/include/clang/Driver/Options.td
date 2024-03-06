@@ -2985,6 +2985,14 @@ def fmodule_output : Flag<["-"], "fmodule-output">, Flags<[NoXarchOption]>,
   Visibility<[ClangOption, CC1Option]>,
   HelpText<"Save intermediate module file results when compiling a standard C++ module unit.">;
 
+defm skip_odr_check_in_gmf : BoolOption<"f", "skip-odr-check-in-gmf",
+  LangOpts<"SkipODRCheckInGMF">, DefaultFalse,
+  PosFlag<SetTrue, [], [CC1Option],
+          "Skip ODR checks for decls in the global module fragment.">,
+  NegFlag<SetFalse, [], [CC1Option],
+          "Perform ODR checks for decls in the global module fragment.">>,
+  Group<f_Group>;
+
 def fmodules_prune_interval : Joined<["-"], "fmodules-prune-interval=">, Group<i_Group>,
   Visibility<[ClangOption, CC1Option]>, MetaVarName<"<seconds>">,
   HelpText<"Specify the interval (in seconds) between attempts to prune the module cache">,
@@ -5807,6 +5815,18 @@ def mvis3 : Flag<["-"], "mvis3">, Group<m_sparc_Features_Group>;
 def mno_vis3 : Flag<["-"], "mno-vis3">, Group<m_sparc_Features_Group>;
 def mhard_quad_float : Flag<["-"], "mhard-quad-float">, Group<m_sparc_Features_Group>;
 def msoft_quad_float : Flag<["-"], "msoft-quad-float">, Group<m_sparc_Features_Group>;
+foreach i = 1 ... 7 in
+  def ffixed_g#i : Flag<["-"], "ffixed-g"#i>, Group<m_sparc_Features_Group>,
+    HelpText<"Reserve the G"#i#" register (SPARC only)">;
+foreach i = 0 ... 5 in
+  def ffixed_o#i : Flag<["-"], "ffixed-o"#i>, Group<m_sparc_Features_Group>,
+    HelpText<"Reserve the O"#i#" register (SPARC only)">;
+foreach i = 0 ... 7 in
+  def ffixed_l#i : Flag<["-"], "ffixed-l"#i>, Group<m_sparc_Features_Group>,
+    HelpText<"Reserve the L"#i#" register (SPARC only)">;
+foreach i = 0 ... 5 in
+  def ffixed_i#i : Flag<["-"], "ffixed-i"#i>, Group<m_sparc_Features_Group>,
+    HelpText<"Reserve the I"#i#" register (SPARC only)">;
 } // let Flags = [TargetSpecific]
 
 // M68k features flags
