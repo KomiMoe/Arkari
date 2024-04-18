@@ -215,6 +215,17 @@ Changes to the RISC-V Backend
 * ``-mcpu=sifive-p670`` was added.
 * Support for the Zicond extension is no longer experimental.
 
+Changes to the SystemZ Backend
+------------------------------
+
+* Properly support 16 byte atomic int/fp types and ops.
+* Support i128 as legal type in VRs.
+* Add an i128 cost model.
+* Support building individual functions with backchain using the
+  __attribute__((target("backchain"))) syntax.
+* Add exception handling for XPLINK.
+* Add support for llvm-objcopy.
+
 Changes to the WebAssembly Backend
 ----------------------------------
 
@@ -339,36 +350,41 @@ Changes to the Debug Info
 Changes to the LLVM tools
 ---------------------------------
 
-* llvm-symbolizer now treats invalid input as an address for which source
+* ``llvm-symbolizer`` now treats invalid input as an address for which source
   information is not found.
-* Fixed big-endian support in llvm-symbolizer's DWARF location parser.
-* llvm-readelf now supports ``--extra-sym-info`` (``-X``) to display extra
+* Fixed big-endian support in ``llvm-symbolizer``'s DWARF location parser.
+* ``llvm-readelf`` now supports ``--extra-sym-info`` (``-X``) to display extra
   information (section name) when showing symbols.
+* ``llvm-readobj``/``llvm-readelf`` now supports ``--decompress``/``-z`` with
+  string and hex dump for ELF object files.
 
-* ``llvm-nm`` now supports the ``--line-numbers`` (``-l``) option to use
-  debugging information to print symbols' filenames and line numbers.
+* ``llvm-symbolizer`` and ``llvm-addr2line`` now support addresses specified as symbol names.
 
-* llvm-symbolizer and llvm-addr2line now support addresses specified as symbol names.
-
-* llvm-objcopy now supports ``--gap-fill`` and ``--pad-to`` options, for
+* ``llvm-objcopy`` now supports ``--gap-fill`` and ``--pad-to`` options, for
   ELF input and binary output files only.
+* ``llvm-objcopy`` now supports ``-O elf64-s390`` for SystemZ.
 
-* Supported parsing XCOFF auxiliary symbols in obj2yaml.
+* Supported parsing XCOFF auxiliary symbols in ``obj2yaml``.
 
 * ``llvm-ranlib`` now supports ``-X`` on AIX to specify the type of object file
   ranlib should examine.
 
-* ``llvm-nm`` now supports ``--export-symbol`` to ignore the import symbol file.
+* ``llvm-cxxfilt`` now supports ``--no-params``/``-p`` to skip function
+  parameters.
 
-* llvm-rc and llvm-windres now accept file path references in ``.rc`` files
+* ``llvm-nm`` now supports ``--export-symbol`` to ignore the import symbol file.
+* ``llvm-nm`` now supports the ``--line-numbers`` (``-l``) option to use
+  debugging information to print symbols' filenames and line numbers.
+
+* ``llvm-rc`` and ``llvm-windres`` now accept file path references in ``.rc`` files
   concatenated from multiple string literals.
 
-* The llvm-windres option ``--preprocessor`` now resolves its argument
-  in the PATH environment variable as expected, and options passed with
+* The ``llvm-windres`` option ``--preprocessor`` now resolves its argument
+  in the ``PATH`` environment variable as expected, and options passed with
   ``--preprocessor-arg`` are placed before the input file as they should
   be.
 
-* The llvm-windres option ``--preprocessor`` has been updated with the
+* The ``llvm-windres`` option ``--preprocessor`` has been updated with the
   breaking behaviour change from GNU windres from binutils 2.36, where
   the whole argument is considered as one path, not considered as a
   sequence of tool name and parameters.

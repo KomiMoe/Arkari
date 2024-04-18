@@ -899,6 +899,9 @@ Bug Fixes in This Version
 - Clang now doesn't produce false-positive warning `-Wconstant-logical-operand`
   for logical operators in C23.
   Fixes (`#64356 <https://github.com/llvm/llvm-project/issues/64356>`_).
+- Clang's ``-Wshadow`` no longer warns when an init-capture is named the same as
+  a class field unless the lambda can capture this.
+  Fixes (`#71976 <https://github.com/llvm/llvm-project/issues/71976>`_)
 
 Bug Fixes to Compiler Builtins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1103,6 +1106,12 @@ Bug Fixes to C++ Support
   (`#82258 <https://github.com/llvm/llvm-project/issues/82258>`_)
 - Correctly immediate-escalate lambda conversion functions.
   (`#82258 <https://github.com/llvm/llvm-project/issues/82258>`_)
+- Fix a crash when an unresolved overload set is encountered on the RHS of a ``.*`` operator.
+  (`#53815 <https://github.com/llvm/llvm-project/issues/53815>`_)
+
+- Fixed a regression in CTAD that a friend declaration that befriends itself may cause
+  incorrect constraint substitution.
+  (`#86769 <https://github.com/llvm/llvm-project/issues/86769>`_)
 
 Bug Fixes to AST Handling
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1324,6 +1333,11 @@ AIX Support
 - Enabled ThinLTO support. Requires AIX 7.2 TL5 SP7 or newer, or AIX 7.3 TL2
   or newer. Similar to the LTO support on AIX, ThinLTO is implemented with
   the libLTO.so plugin.
+
+SystemZ Support
+^^^^^^^^^^^^^^^
+- Properly support 16 byte atomic int/fp types and ops. Atomic __int128 (and
+  long double) variables are now aligned to 16 bytes by default (like gcc 14).
 
 WebAssembly Support
 ^^^^^^^^^^^^^^^^^^^
