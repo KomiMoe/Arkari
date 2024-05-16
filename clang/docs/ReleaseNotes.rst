@@ -149,6 +149,12 @@ ABI Changes in This Version
 - Following the SystemV ABI for x86-64, ``__int128`` arguments will no longer
   be split between a register and a stack slot.
 
+- Fixed Microsoft calling convention for returning certain classes with a
+  templated constructor. If a class has a templated constructor, it should
+  be returned indirectly even if it meets all the other requirements for
+  returning a class in a register. This affects some uses of std::pair.
+  (#GH86384).
+
 AST Dumping Potentially Breaking Changes
 ----------------------------------------
 - When dumping a sugared type, Clang will no longer print the desugared type if
@@ -1473,6 +1479,10 @@ Crash and bug fixes
 
 - Fix false positive in mutation check when using pointer to member function.
   (`#66204 <https://github.com/llvm/llvm-project/issues/66204>`_)
+
+- Fixed a crash in ``security.cert.env.InvalidPtr`` checker when accidentally
+  matched user-defined ``strerror`` and similar library functions.
+  (`#88181 <https://github.com/llvm/llvm-project/issues/88181>`_)
 
 Improvements
 ^^^^^^^^^^^^

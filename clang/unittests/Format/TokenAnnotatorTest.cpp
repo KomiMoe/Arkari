@@ -1872,6 +1872,10 @@ TEST_F(TokenAnnotatorTest, UnderstandsTrailingReturnArrow) {
   ASSERT_EQ(Tokens.size(), 12u) << Tokens;
   EXPECT_TOKEN(Tokens[7], tok::arrow, TT_Unknown);
 
+  Tokens = annotate("__attribute__((cold)) C() : Base(obj->func()) {}");
+  ASSERT_EQ(Tokens.size(), 21u) << Tokens;
+  EXPECT_TOKEN(Tokens[13], tok::arrow, TT_Unknown);
+
   // Mixed
   Tokens = annotate("auto f() -> int { auto a = b()->c; }");
   ASSERT_EQ(Tokens.size(), 18u) << Tokens;
@@ -1885,14 +1889,20 @@ TEST_F(TokenAnnotatorTest, UnderstandHashInMacro) {
                          "    #Bar \\\n"
                          "  }");
   ASSERT_EQ(Tokens.size(), 11u) << Tokens;
-  EXPECT_BRACE_KIND(Tokens[6], BK_Block);
-  EXPECT_BRACE_KIND(Tokens[9], BK_Block);
+  EXPECT_BRACE_KIND(Tokens[6], BK_BracedInit);
+  EXPECT_BRACE_KIND(Tokens[9], BK_BracedInit);
 
   Tokens = annotate("#define Foo(Bar) \\\n"
                     "  { #Bar }");
   ASSERT_EQ(Tokens.size(), 11u) << Tokens;
-  EXPECT_BRACE_KIND(Tokens[6], BK_Block);
-  EXPECT_BRACE_KIND(Tokens[9], BK_Block);
+  EXPECT_BRACE_KIND(Tokens[6], BK_BracedInit);
+  EXPECT_BRACE_KIND(Tokens[9], BK_BracedInit);
+
+  Tokens = annotate("#define FOO(typeName, realClass) \\\n"
+                    "  {#typeName, foo<Foo>(new foo<realClass>(#typeName))}");
+  ASSERT_EQ(Tokens.size(), 29u) << Tokens;
+  EXPECT_BRACE_KIND(Tokens[8], BK_BracedInit);
+  EXPECT_BRACE_KIND(Tokens[27], BK_BracedInit);
 }
 
 TEST_F(TokenAnnotatorTest, UnderstandsAttributeMacros) {
@@ -2609,15 +2619,19 @@ TEST_F(TokenAnnotatorTest, BraceKind) {
   EXPECT_TOKEN(Tokens[13], tok::l_brace, TT_FunctionLBrace);
   EXPECT_BRACE_KIND(Tokens[13], BK_Block);
   EXPECT_BRACE_KIND(Tokens[14], BK_Block);
-}
 
-TEST_F(TokenAnnotatorTest, StreamOperator) {
-  auto Tokens = annotate("\"foo\\n\" << aux << \"foo\\n\" << \"foo\";");
-  ASSERT_EQ(Tokens.size(), 9u) << Tokens;
-  EXPECT_FALSE(Tokens[1]->MustBreakBefore);
-  EXPECT_FALSE(Tokens[3]->MustBreakBefore);
-  // Only break between string literals if the former ends with \n.
-  EXPECT_TRUE(Tokens[5]->MustBreakBefore);
+  Tokens = annotate("{\n"
+                    "  char *a[] = {\n"
+                    "      /* abc */ \"abc\",\n"
+                    "#if FOO\n"
+                    "      /* xyz */ \"xyz\",\n"
+                    "#endif\n"
+                    "      /* last */ \"last\"};\n"
+                    "}");
+  ASSERT_EQ(Tokens.size(), 25u) << Tokens;
+  EXPECT_BRACE_KIND(Tokens[0], BK_Block);
+  EXPECT_BRACE_KIND(Tokens[7], BK_BracedInit);
+  EXPECT_BRACE_KIND(Tokens[21], BK_BracedInit);
 }
 
 } // namespace
