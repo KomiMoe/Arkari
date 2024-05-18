@@ -120,7 +120,7 @@ bool StringEncryption::runOnModule(Module &M) {
           Entry->Data.push_back(static_cast<uint8_t>(Data[i]));
         }
         Entry->ID = static_cast<unsigned>(ConstantStringPool.size());
-        ConstantAggregateZero *ZeroInit = ConstantAggregateZero::get(CDS->getType());
+        Constant *ZeroInit = Constant::getNullValue(CDS->getType());
         GlobalVariable *DecGV = new GlobalVariable(M, CDS->getType(), false, GlobalValue::PrivateLinkage,
                                                    ZeroInit, "dec" + Twine::utohexstr(Entry->ID) + GV.getName());
         GlobalVariable *DecStatus = new GlobalVariable(M, Type::getInt32Ty(Ctx), false, GlobalValue::PrivateLinkage,
@@ -148,7 +148,7 @@ bool StringEncryption::runOnModule(Module &M) {
   for (GlobalVariable *GV: ConstantStringUsers) {
     if (isValidToEncrypt(GV)) {
       Type *EltType = GV->getValueType();
-      ConstantAggregateZero *ZeroInit = ConstantAggregateZero::get(EltType);
+      Constant *ZeroInit = Constant::getNullValue(EltType);
       GlobalVariable *DecGV = new GlobalVariable(M, EltType, false, GlobalValue::PrivateLinkage,
                                                  ZeroInit, "dec_" + GV->getName());
       DecGV->setAlignment(MaybeAlign(GV->getAlignment()));
