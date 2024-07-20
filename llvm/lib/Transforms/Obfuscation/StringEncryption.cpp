@@ -392,6 +392,12 @@ bool StringEncryption::processConstantStringUse(Function *F) {
       if (Inst.isEHPad()) {
         continue;
       }
+      if (isa<LandingPadInst>(Inst) || isa<CleanupPadInst>(Inst) ||
+        isa<CatchPadInst>(Inst) || isa<CatchReturnInst>(Inst) ||
+        isa<CatchSwitchInst>(Inst) || isa<ResumeInst>(Inst) ||
+        isa<CallInst>(Inst)) {
+        continue;
+      }
       if (PHINode *PHI = dyn_cast<PHINode>(&Inst)) {
         for (unsigned int i = 0; i < PHI->getNumIncomingValues(); ++i) {
           if (GlobalVariable *GV = dyn_cast<GlobalVariable>(PHI->getIncomingValue(i))) {
