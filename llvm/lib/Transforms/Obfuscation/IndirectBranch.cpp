@@ -89,18 +89,16 @@ struct IndirectBranch : public FunctionPass {
 
 
   bool runOnFunction(Function &Fn) override {
-    unsigned long currentRunFlag = 0;
-
-    if (toObfuscate(flag, &Fn, "indbr")) {
-      currentRunFlag |= 1;
+    if (!toObfuscate(flag, &Fn, "indbr")) {
+      return false;
     }
 
     if (Options && Options->skipFunction(Fn.getName())) {
-      currentRunFlag |= 2;
+      return false;
     }
 
     if (Fn.empty() || Fn.hasLinkOnceLinkage() || Fn.getSection() == ".text.startup") {
-      currentRunFlag |= 2;
+      return false;
     }
 
     LLVMContext &Ctx = Fn.getContext();
@@ -112,6 +110,10 @@ struct IndirectBranch : public FunctionPass {
     // llvm cannot split critical edge from IndirectBrInst
     SplitAllCriticalEdges(Fn, CriticalEdgeSplittingOptions(nullptr, nullptr));
     NumberBasicBlock(Fn);
+
+    if (BBNumbering.empty()) {
+      return false;
+    }
 
     uint64_t V = RandomEngine.get_uint64_t();
     IntegerType* intType = Type::getInt32Ty(Ctx);
@@ -125,32 +127,8 @@ struct IndirectBranch : public FunctionPass {
 
     ConstantInt *Zero = ConstantInt::get(intType, 0);
     GlobalVariable *DestBBs = getIndirectTargets(Fn, EncKey1);
-    SmallVector<CallBase*> cbNeedRemove;
 
     for (auto &BB : Fn) {
-      for (auto& Inst : BB) {
-        if (dyn_cast<CallInst>(&Inst)) {
-          CallBase* CB = dyn_cast<CallBase>(&Inst);
-          Function* Callee = CB->getCalledFunction();
-          if (!Callee || !Callee->isDLLImportDependent() || !Callee->hasName()) {
-            continue;
-          }
-
-          auto CalleeName = Callee->getName();
-          if (CalleeName.compare("ArkariIndirectBranchBegin") == 0) {
-            currentRunFlag |= 1;
-            cbNeedRemove.push_back(CB);
-          } else if (CalleeName.compare("ArkariIndirectBranchEnd") == 0) {
-            currentRunFlag &= (~1ul);
-            cbNeedRemove.push_back(CB);
-          }
-        }
-      }
-
-      if ((currentRunFlag & 3) != 1) {
-        continue;
-      }
-
       auto *BI = dyn_cast<BranchInst>(BB.getTerminator());
       if (BI && BI->isConditional()) {
         IRBuilder<> IRB(BI);
@@ -183,9 +161,6 @@ struct IndirectBranch : public FunctionPass {
       }
     }
 
-    for (auto needRemove : cbNeedRemove) {
-      needRemove->eraseFromParent();
-    }
     return true;
   }
 
