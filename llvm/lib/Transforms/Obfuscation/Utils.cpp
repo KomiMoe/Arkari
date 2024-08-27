@@ -44,11 +44,11 @@ void fixStack(Function *f) {
       }
     }
     for (unsigned int i = 0; i != tmpReg.size(); ++i) {
-      DemoteRegToStack(*tmpReg.at(i), false, f->begin()->getTerminator()->getIterator());
+      DemoteRegToStack(*tmpReg.at(i));
     }
 
     for (unsigned int i = 0; i != tmpPhi.size(); ++i) {
-      DemotePHIToStack(tmpPhi.at(i), f->begin()->getTerminator()->getIterator());
+      DemotePHIToStack(tmpPhi.at(i));
     }
 
   } while (tmpReg.size() != 0 || tmpPhi.size() != 0);
