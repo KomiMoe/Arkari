@@ -1161,7 +1161,7 @@ void EmitAssemblyHelper::RunCodegenPipeline(
 void EmitAssemblyHelper::EmitAssembly(BackendAction Action,
                                       std::unique_ptr<raw_pwrite_stream> OS,
                                       BackendConsumer *BC) {
-  outs() << TheModule->getName() << "\n\n";
+  outs() << TheModule->getName() << "\n";
   TimeRegion Region(CodeGenOpts.TimePasses ? &CodeGenerationTime : nullptr);
   setCommandLineOpts(CodeGenOpts);
 
