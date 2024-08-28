@@ -38,12 +38,12 @@ ninja
 ```
 
 ## 使用
-跟ollvm类似,可通过编译选项开启相应混淆.
-如启用间接跳转混淆
+可通过编译选项开启相应混淆，如启用间接跳转混淆：
+
 ```
 $ path_to_the/build/bin/clang -mllvm -irobf -mllvm --irobf-indbr test.c
 ```
-对于使用autotools的工程
+对于使用autotools的工程：
 ```
 $ CC=path_to_the/build/bin/clang or CXX=path_to_the/build/bin/clang
 $ CFLAGS+="-mllvm -irobf -mllvm --irobf-indbr" or CXXFLAGS+="-mllvm -irobf -mllvm --irobf-indbr" (or any other obfuscation-related flags)
@@ -51,7 +51,35 @@ $ ./configure
 $ make
 ```
 
+可以通过**annotate**对特定函数**开启/关闭**指定混淆选项：
+
+```cpp
+[[clang::annotate("-fla -icall")]] int foo(auto a, auto b){
+    return a + b;
+}
+
+[[clang::annotate("+indbr +cse")]] int main(int argc, char** argv) {
+    foo(1, 2);
+    std::printf("hello clang\n");
+
+    return 0;
+}
+```
+
+如果你不希望对整个程序都启用Pass，那么你可以在编译选项中只添加**-mllvm -irobf**，然后使用**annotate**控制需要混淆的函数，需要注意的是仅开启**-irobf**不使用**annotate**不会运行任何混淆Pass，当然，不添加任何混淆参数的情况下，仅使用**annotate**也不会启用任何Pass
+
+当然以下情况会报错：
+
+```cpp
+[[clang::annotate("-fla +fla")]] int fool(auto a, auto b){
+    return a + b;
+}
+```
+
+你**不能**同时开启和关闭某个混淆参数！
+
 ## 参考资源
+
 + [Goron](https://github.com/amimo/goron)
 + [Hikari](https://github.com/HikariObfuscator/Hikari)
 + [ollvm](https://github.com/obfuscator-llvm/obfuscator)
