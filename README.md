@@ -54,6 +54,7 @@ $ make
 可以通过**annotate**对特定函数**开启/关闭**指定混淆选项：
 
 ```cpp
+//fla表示编译选项中的cff
 [[clang::annotate("-fla -icall")]] int foo(auto a, auto b){
     return a + b;
 }
