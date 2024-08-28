@@ -3,6 +3,7 @@
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/DiagnosticInfo.h"
 
 // Shamefully borrowed from ../Scalar/RegToMem.cpp :(
 bool valueEscapes(Instruction *Inst) {
@@ -54,53 +55,41 @@ void fixStack(Function *f) {
   } while (tmpReg.size() != 0 || tmpPhi.size() != 0);
 }
 
-std::string readAnnotate(Function *f) {
-  std::string annotation = "";
+SmallVector<std::string> readAnnotate(Function *f) {
+  SmallVector<std::string> annotations;
 
-  // Get annotation variable
-  GlobalVariable *glob =
-      f->getParent()->getGlobalVariable("llvm.global.annotations");
+  auto* Annotations = f->getParent()->getGlobalVariable("llvm.global.annotations");
+  auto* C = dyn_cast_or_null<Constant>(Annotations);
+  if (!C || C->getNumOperands() != 1)
+    return annotations;
 
-  if (glob != NULL) {
-    // Get the array
-    if (ConstantArray *ca = dyn_cast<ConstantArray>(glob->getInitializer())) {
-      for (unsigned i = 0; i < ca->getNumOperands(); ++i) {
-        // Get the struct
-        if (ConstantStruct *structAn =
-            dyn_cast<ConstantStruct>(ca->getOperand(i))) {
-          if (ConstantExpr *expr =
-              dyn_cast<ConstantExpr>(structAn->getOperand(0))) {
-            // If it's a bitcast we can check if the annotation is concerning
-            // the current function
-            if (expr->getOpcode() == Instruction::BitCast &&
-                expr->getOperand(0) == f) {
-              ConstantExpr *note = cast<ConstantExpr>(structAn->getOperand(1));
-              // If it's a GetElementPtr, that means we found the variable
-              // containing the annotations
-              if (note->getOpcode() == Instruction::GetElementPtr) {
-                if (GlobalVariable *annoteStr =
-                    dyn_cast<GlobalVariable>(note->getOperand(0))) {
-                  if (ConstantDataSequential *data =
-                      dyn_cast<ConstantDataSequential>(
-                          annoteStr->getInitializer())) {
-                    if (data->isString()) {
-                      annotation += data->getAsString().lower() + " ";
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+  C = cast<Constant>(C->getOperand(0));
+
+  // Iterate over all entries in C and attach !annotation metadata to suitable
+  // entries.
+  for (auto& Op : C->operands()) {
+    // Look at the operands to check if we can use the entry to generate
+    // !annotation metadata.
+    auto* OpC = dyn_cast<ConstantStruct>(&Op);
+    if (!OpC || OpC->getNumOperands() < 2)
+      continue;
+    auto* Fn = dyn_cast<Function>(OpC->getOperand(0)->stripPointerCasts());
+    if (Fn != f)
+      continue;
+    auto* StrC = dyn_cast<GlobalValue>(OpC->getOperand(1)->stripPointerCasts());
+    if (!StrC)
+      continue;
+    auto* StrData = dyn_cast<ConstantDataSequential>(StrC->getOperand(0));
+    if (!StrData)
+      continue;
+    annotations.emplace_back(StrData->getAsString());
   }
-  return annotation;
+  return annotations;
 }
 
-bool toObfuscate(bool flag, Function *f, std::string attribute) {
-  std::string attr = attribute;
-  std::string attrNo = "no" + attr;
+bool toObfuscate(bool flag, Function *f, const std::string &attribute) {
+  std::string attr = "+" + attribute;
+  std::string attrNo = "-" + attribute;
 
   // Check if declaration
   if (f->isDeclaration()) {
@@ -115,36 +104,47 @@ bool toObfuscate(bool flag, Function *f, std::string attribute) {
   // We have to check the nofla flag first
   // Because .find("fla") is true for a string like "fla" or
   // "nofla"
-  if (readAnnotate(f).find(attrNo) != std::string::npos) {
-    return false;
+  bool annotationEnableFound = false;
+  bool annotationDisableFound = false;
+
+  auto annotations = readAnnotate(f);
+  if (!annotations.empty()) {
+    for (const auto& annotation : annotations) {
+      if (annotation.find(attrNo) != std::string::npos) {
+        annotationDisableFound = true;
+      }
+      if (annotation.find(attr) != std::string::npos) {
+        annotationEnableFound = true;
+      }
+    }
   }
 
-  // If fla annotations
-  if (readAnnotate(f).find(attr) != std::string::npos) {
-    return true;
+  if (annotationDisableFound && annotationEnableFound) {
+     f->getContext().diagnose(DiagnosticInfoUnsupported{ *f, f->getName() + " having both enable annotation and disable annotation, What are you the fucking want to do?" });
   }
 
-  // If fla flag is set
-  if (flag == true) {
-    /* Check if the number of applications is correct
-    if (!((Percentage > 0) && (Percentage <= 100))) {
-      LLVMContext &ctx = llvm::getGlobalContext();
-      ctx.emitError(Twine("Flattening application function\
-              percentage -perFLA=x must be 0 < x <= 100"));
-    }
-    // Check name
-    else if (func.size() != 0 && func.find(f->getName()) != std::string::npos) {
-      return true;
-    }
-
-    if ((((int)llvm::cryptoutils->get_range(100))) < Percentage) {
-      return true;
-    }
-    */
-    return true;
-  }
-
-  return false;
+  return annotationEnableFound ? true : annotationDisableFound ? false : flag;
+//   // If fla flag is set
+//   if (flag == true) {
+//     /* Check if the number of applications is correct
+//     if (!((Percentage > 0) && (Percentage <= 100))) {
+//       LLVMContext &ctx = llvm::getGlobalContext();
+//       ctx.emitError(Twine("Flattening application function\
+//               percentage -perFLA=x must be 0 < x <= 100"));
+//     }
+//     // Check name
+//     else if (func.size() != 0 && func.find(f->getName()) != std::string::npos) {
+//       return true;
+//     }
+//
+//     if ((((int)llvm::cryptoutils->get_range(100))) < Percentage) {
+//       return true;
+//     }
+//     */
+//     return true;
+//   }
+//
+//   return false;
 }
 
 void LowerConstantExpr(Function &F) {

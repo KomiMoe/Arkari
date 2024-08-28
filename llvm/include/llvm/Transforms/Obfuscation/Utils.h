@@ -8,8 +8,8 @@
 using namespace llvm;
 bool valueEscapes(Instruction *Inst);
 void fixStack(Function *f);
-std::string readAnnotate(Function *f);
-bool toObfuscate(bool flag, Function *f, std::string attribute);
+SmallVector<std::string> readAnnotate(Function *f);
+bool toObfuscate(bool flag, Function *f, const std::string &attribute);
 void LowerConstantExpr(Function &F);
 
 #endif
