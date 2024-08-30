@@ -367,7 +367,7 @@ void StringEncryption::lowerGlobalConstantStruct(ConstantStruct *CS, IRBuilder<>
 
 bool StringEncryption::processConstantStringUse(Function *F) {
   auto opt = ArgsOptions->toObfuscate(ArgsOptions->cseOpt(), F);
-  if (opt.isEnabled()) {
+  if (!opt.isEnabled()) {
     return false;
   }
   LLVMContext &Ctx = F->getContext();
