@@ -5,10 +5,9 @@
 namespace llvm {
 class FunctionPass;
 class PassRegistry;
-struct ObfuscationOptions;
+class ObfuscationOptions;
 
-FunctionPass* createIndirectBranchPass(unsigned pointerSize);
-FunctionPass* createIndirectBranchPass(unsigned pointerSize, bool flag, ObfuscationOptions *Options);
+FunctionPass* createIndirectBranchPass(unsigned pointerSize, ObfuscationOptions *argsOptions);
 void initializeIndirectBranchPass(PassRegistry &Registry);
 
 }

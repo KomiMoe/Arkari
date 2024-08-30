@@ -11,18 +11,18 @@
 using namespace llvm;
 
 static cl::opt<bool>
-    EnableIRObfusaction("irobf", cl::init(false), cl::NotHidden,
-                        cl::desc("Enable IR Code Obfuscation."),
-                        cl::ZeroOrMore);
+EnableIRObfusaction("irobf", cl::init(false), cl::NotHidden,
+                    cl::desc("Enable IR Code Obfuscation."),
+                    cl::ZeroOrMore);
 static cl::opt<bool>
-    EnableIndirectBr("irobf-indbr", cl::init(false), cl::NotHidden,
-                     cl::desc("Enable IR Indirect Branch Obfuscation."),
-                     cl::ZeroOrMore);
+EnableIndirectBr("irobf-indbr", cl::init(false), cl::NotHidden,
+                 cl::desc("Enable IR Indirect Branch Obfuscation."),
+                 cl::ZeroOrMore);
 
 static cl::opt<bool>
-    EnableIndirectCall("irobf-icall", cl::init(false), cl::NotHidden,
-                       cl::desc("Enable IR Indirect Call Obfuscation."),
-                       cl::ZeroOrMore);
+EnableIndirectCall("irobf-icall", cl::init(false), cl::NotHidden,
+                   cl::desc("Enable IR Indirect Call Obfuscation."),
+                   cl::ZeroOrMore);
 
 static cl::opt<bool> EnableIndirectGV(
     "irobf-indgv", cl::init(false), cl::NotHidden,
@@ -34,24 +34,23 @@ static cl::opt<bool> EnableIRFlattening(
     cl::desc("Enable IR Control Flow Flattening Obfuscation."), cl::ZeroOrMore);
 
 static cl::opt<bool>
-    EnableIRStringEncryption("irobf-cse", cl::init(false), cl::NotHidden,
-                             cl::desc("Enable IR Constant String Encryption."), cl::ZeroOrMore);
-
-static cl::opt<std::string> GoronConfigure("goron-cfg",
-                                           cl::desc("Goron configuration file"),
-                                           cl::Optional);
+EnableIRStringEncryption("irobf-cse", cl::init(false), cl::NotHidden,
+                         cl::desc("Enable IR Constant String Encryption."),
+                         cl::ZeroOrMore);
 
 namespace llvm {
 
 struct ObfuscationPassManager : public ModulePass {
-  static char ID; // Pass identification
+  static char            ID; // Pass identification
   SmallVector<Pass *, 8> Passes;
 
   ObfuscationPassManager() : ModulePass(ID) {
     initializeObfuscationPassManagerPass(*PassRegistry::getPassRegistry());
   };
 
-  StringRef getPassName() const override { return "Obfuscation Pass Manager"; }
+  StringRef getPassName() const override {
+    return "Obfuscation Pass Manager";
+  }
 
   bool doFinalization(Module &M) override {
     bool Change = false;
@@ -62,7 +61,9 @@ struct ObfuscationPassManager : public ModulePass {
     return Change;
   }
 
-  void add(Pass *P) { Passes.push_back(P); }
+  void add(Pass *P) {
+    Passes.push_back(P);
+  }
 
   bool run(Module &M) {
     bool Change = false;
@@ -89,26 +90,22 @@ struct ObfuscationPassManager : public ModulePass {
     return Changed;
   }
 
-  bool runModulePass(Module &M, ModulePass *P) { return P->runOnModule(M); }
+  bool runModulePass(Module &M, ModulePass *P) {
+    return P->runOnModule(M);
+  }
 
   static ObfuscationOptions *getOptions() {
-    ObfuscationOptions *Options = nullptr;
-    if (sys::fs::exists(GoronConfigure.getValue())) {
-      Options = new ObfuscationOptions(GoronConfigure.getValue());
-    } else {
-      SmallString<128> ConfigurePath;
-      if (sys::path::home_directory(ConfigurePath)) {
-        sys::path::append(ConfigurePath, "goron.yaml");
-        Options = new ObfuscationOptions(ConfigurePath);
-      } else {
-        Options = new ObfuscationOptions();
-      }
-    }
+    ObfuscationOptions *Options = new ObfuscationOptions{
+        new ObfOpt{EnableIndirectBr, 0, "indbr"},
+        new ObfOpt{EnableIndirectCall, 0, "icall"},
+        new ObfOpt{EnableIndirectGV, 0, "indgv"},
+        new ObfOpt{EnableIRFlattening, 0, "fla"},
+        new ObfOpt{EnableIRStringEncryption, 0, "cse"}};
     return Options;
   }
 
   bool runOnModule(Module &M) override {
-    
+
     if (EnableIndirectBr || EnableIndirectCall || EnableIndirectGV ||
         EnableIRFlattening || EnableIRStringEncryption) {
       EnableIRObfusaction = true;
@@ -119,18 +116,16 @@ struct ObfuscationPassManager : public ModulePass {
     }
 
     std::unique_ptr<ObfuscationOptions> Options(getOptions());
-    unsigned pointerSize = M.getDataLayout().getTypeAllocSize(PointerType::getUnqual(M.getContext()));
-    if (EnableIRStringEncryption || Options->EnableCSE) {
-      add(llvm::createStringEncryptionPass(true, Options.get()));
+    unsigned pointerSize = M.getDataLayout().getTypeAllocSize(
+        PointerType::getUnqual(M.getContext()));
+    if (EnableIRStringEncryption || Options->cseOpt()->isEnabled()) {
+      add(llvm::createStringEncryptionPass(Options.get()));
     }
 
-    add(llvm::createFlatteningPass(pointerSize, EnableIRFlattening || Options->EnableCFF, Options.get()));
-    add(llvm::createIndirectBranchPass(pointerSize,
-        EnableIndirectBr || Options->EnableIndirectBr, Options.get()));
-    add(llvm::createIndirectCallPass(pointerSize, EnableIndirectCall ||
-                                         Options->EnableIndirectCall, Options.get()));
-    add(llvm::createIndirectGlobalVariablePass(pointerSize,
-        EnableIndirectGV || Options->EnableIndirectGV, Options.get()));
+    add(llvm::createFlatteningPass(pointerSize, Options.get()));
+    add(llvm::createIndirectBranchPass(pointerSize, Options.get()));
+    add(llvm::createIndirectCallPass(pointerSize, Options.get()));
+    add(llvm::createIndirectGlobalVariablePass(pointerSize, Options.get()));
 
     bool Changed = run(M);
 
@@ -140,10 +135,12 @@ struct ObfuscationPassManager : public ModulePass {
 } // namespace llvm
 
 char ObfuscationPassManager::ID = 0;
+
 ModulePass *llvm::createObfuscationPassManager() {
   return new ObfuscationPassManager();
 }
+
 INITIALIZE_PASS_BEGIN(ObfuscationPassManager, "irobf", "Enable IR Obfuscation",
                       false, false)
 INITIALIZE_PASS_END(ObfuscationPassManager, "irobf", "Enable IR Obfuscation",
-                    false, false)
+                      false, false)

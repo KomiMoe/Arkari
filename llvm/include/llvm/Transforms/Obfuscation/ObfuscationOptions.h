@@ -3,27 +3,92 @@
 
 #include <set>
 #include <llvm/Support/YAMLParser.h>
+#include <llvm/IR/Function.h>
+
 
 namespace llvm {
 
-struct ObfuscationOptions {
-  explicit ObfuscationOptions(const Twine &FileName);
-  explicit ObfuscationOptions();
-  bool skipFunction(const Twine &FName);
-  void dump();
+SmallVector<std::string> readAnnotate(Function *f);
 
-  bool EnableIndirectBr;
-  bool EnableIndirectCall;
-  bool EnableIndirectGV;
-  bool EnableCFF;
-  bool EnableCSE;
-  bool hasFilter;
+class ObfOpt {
+protected:
+  uint32_t Enabled : 1;
+  uint32_t Level : 2;
+  std::string AttributeName;
 
-private:
-  void init();
-  void handleRoot(yaml::Node *n);
-  bool parseOptions(const Twine &FileName);
-  std::set<std::string> FunctionFilter;
+public:
+  ObfOpt(bool enable, uint32_t level, const std::string& attributeName) {
+    this->Enabled = enable;
+    this->Level = std::min<uint32_t>(level, 3);
+    this->AttributeName = attributeName;
+  }
+
+  void setEnable(bool enabled) {
+    this->Enabled = enabled;
+  }
+
+  void setLevel(uint32_t level) {
+    this->Level = std::min<uint32_t>(level, 3);
+  }
+
+  bool isEnabled() const {
+    return this->Enabled;
+  }
+
+  uint32_t level() const {
+    return this->Level;
+  }
+
+  const std::string& attributeName() const {
+    return this->AttributeName;
+  }
+
+  ObfOpt none() const {
+    return ObfOpt{ false, 0, this->attributeName() };
+  }
+
+};
+
+class ObfuscationOptions {
+protected:
+  ObfOpt* IndBrOpt = nullptr;
+  ObfOpt* ICallOpt = nullptr;
+  ObfOpt* IndGvOpt = nullptr;
+  ObfOpt* FlaOpt   = nullptr;
+  ObfOpt* CseOpt   = nullptr;
+  
+
+public:
+  ObfuscationOptions(ObfOpt* indBrOpt,  ObfOpt* iCallOpt, ObfOpt* indGvOpt, ObfOpt* flaOpt, ObfOpt* cseOpt) {
+    this->IndBrOpt = indBrOpt;
+    this->ICallOpt = iCallOpt;
+    this->IndGvOpt = indGvOpt;
+    this->FlaOpt   = flaOpt;
+    this->CseOpt   = cseOpt;
+  }
+
+  auto indBrOpt() const {
+    return IndBrOpt;
+  }
+
+  auto iCallOpt() const {
+    return ICallOpt;
+  }
+
+  auto indGvOpt() const {
+    return IndGvOpt;
+  }
+
+  auto flaOpt() const {
+    return FlaOpt;
+  }
+
+  auto cseOpt() const {
+    return CseOpt;
+  }
+
+  static ObfOpt toObfuscate(const ObfOpt* option, Function* f);
+
 };
 
 }

@@ -6,10 +6,9 @@
 #include "llvm/Transforms/Utils/Local.h" // For DemoteRegToStack and DemotePHIToStack
 
 using namespace llvm;
+
 bool valueEscapes(Instruction *Inst);
 void fixStack(Function *f);
-SmallVector<std::string> readAnnotate(Function *f);
-bool toObfuscate(bool flag, Function *f, const std::string &attribute);
 void LowerConstantExpr(Function &F);
 
 #endif

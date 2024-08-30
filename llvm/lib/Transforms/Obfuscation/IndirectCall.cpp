@@ -16,24 +16,17 @@ using namespace llvm;
 namespace {
 struct IndirectCall : public FunctionPass {
   static char ID;
-  bool flag;
   unsigned pointerSize;
   
-  ObfuscationOptions *Options;
+  ObfuscationOptions *ArgsOptions;
   std::map<Function *, unsigned> CalleeNumbering;
   std::vector<CallInst *> CallSites;
   std::vector<Function *> Callees;
   CryptoUtils RandomEngine;
-  IndirectCall(unsigned pointerSize) : FunctionPass(ID) {
-    this->pointerSize = pointerSize;
-    this->flag = false;
-    this->Options = nullptr;
-  }
 
-  IndirectCall(unsigned pointerSize, bool flag, ObfuscationOptions *Options) : FunctionPass(ID) {
+  IndirectCall(unsigned pointerSize, ObfuscationOptions *argsOptions) : FunctionPass(ID) {
     this->pointerSize = pointerSize;
-    this->flag = flag;
-    this->Options = Options;
+    this->ArgsOptions = argsOptions;
   }
 
   StringRef getPassName() const override { return {"IndirectCall"}; }
@@ -86,11 +79,8 @@ struct IndirectCall : public FunctionPass {
 
 
   bool runOnFunction(Function &Fn) override {
-    if (!toObfuscate(flag, &Fn, "icall")) {
-      return false;
-    }
-
-    if (Options && Options->skipFunction(Fn.getName())) {
+    const auto opt = ArgsOptions->toObfuscate(ArgsOptions->iCallOpt(), &Fn);
+    if (!opt.isEnabled()) {
       return false;
     }
 
@@ -171,10 +161,8 @@ struct IndirectCall : public FunctionPass {
 } // namespace llvm
 
 char IndirectCall::ID = 0;
-FunctionPass *llvm::createIndirectCallPass(unsigned pointerSize) { return new IndirectCall(pointerSize); }
-FunctionPass *llvm::createIndirectCallPass(unsigned pointerSize, bool flag,
-                                             ObfuscationOptions *Options) {
-  return new IndirectCall(pointerSize, flag, Options);
+FunctionPass *llvm::createIndirectCallPass(unsigned pointerSize, ObfuscationOptions *argsOptions) {
+  return new IndirectCall(pointerSize, argsOptions);
 }
 
 INITIALIZE_PASS(IndirectCall, "icall", "Enable IR Indirect Call Obfuscation", false, false)

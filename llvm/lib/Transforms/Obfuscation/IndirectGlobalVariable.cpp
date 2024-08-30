@@ -15,22 +15,15 @@ namespace {
 struct IndirectGlobalVariable : public FunctionPass {
   unsigned pointerSize;
   static char ID;
-  bool flag;
   
-  ObfuscationOptions *Options;
+  ObfuscationOptions *ArgsOptions;
   std::map<GlobalVariable *, unsigned> GVNumbering;
   std::vector<GlobalVariable *> GlobalVariables;
   CryptoUtils RandomEngine;
-  IndirectGlobalVariable(unsigned pointerSize) : FunctionPass(ID) {
-    this->pointerSize = pointerSize;
-    this->flag = false;
-    this->Options = nullptr;
-  }
 
-  IndirectGlobalVariable(unsigned pointerSize, bool flag, ObfuscationOptions *Options) : FunctionPass(ID) {
+  IndirectGlobalVariable(unsigned pointerSize, ObfuscationOptions *argsOptions) : FunctionPass(ID) {
     this->pointerSize = pointerSize;
-    this->flag = flag;
-    this->Options = Options;
+    this->ArgsOptions = argsOptions;
   }
 
   StringRef getPassName() const override { return {"IndirectGlobalVariable"}; }
@@ -74,11 +67,8 @@ struct IndirectGlobalVariable : public FunctionPass {
   }
 
   bool runOnFunction(Function &Fn) override {
-    if (!toObfuscate(flag, &Fn, "indgv")) {
-      return false;
-    }
-
-    if (Options && Options->skipFunction(Fn.getName())) {
+    const auto opt = ArgsOptions->toObfuscate(ArgsOptions->indGvOpt(), &Fn);
+    if (!opt.isEnabled()) {
       return false;
     }
 
@@ -184,10 +174,8 @@ struct IndirectGlobalVariable : public FunctionPass {
 } // namespace llvm
 
 char IndirectGlobalVariable::ID = 0;
-FunctionPass *llvm::createIndirectGlobalVariablePass(unsigned pointerSize) { return new IndirectGlobalVariable(pointerSize); }
-FunctionPass *llvm::createIndirectGlobalVariablePass(unsigned pointerSize, bool flag,
-                                                     ObfuscationOptions *Options) {
-  return new IndirectGlobalVariable(pointerSize, flag, Options);
+FunctionPass *llvm::createIndirectGlobalVariablePass(unsigned pointerSize, ObfuscationOptions *argsOptions) {
+  return new IndirectGlobalVariable(pointerSize, argsOptions);
 }
 
 INITIALIZE_PASS(IndirectGlobalVariable, "indgv", "Enable IR Indirect Global Variable Obfuscation", false, false)

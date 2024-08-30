@@ -16,9 +16,8 @@
 
 namespace llvm {
 class FunctionPass;
-struct ObfuscationOptions;
-FunctionPass *createFlatteningPass(unsigned pointerSize);
-FunctionPass *createFlatteningPass(unsigned pointerSize, bool flag, ObfuscationOptions *Options);
+class ObfuscationOptions;
+FunctionPass *createFlatteningPass(unsigned pointerSize, ObfuscationOptions *argsOptions);
 }
 
 #endif

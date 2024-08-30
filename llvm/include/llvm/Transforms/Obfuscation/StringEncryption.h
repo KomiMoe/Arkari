@@ -4,10 +4,9 @@
 namespace llvm {
 class ModulePass;
 class PassRegistry;
-struct ObfuscationOptions;
+class ObfuscationOptions;
 
-ModulePass* createStringEncryptionPass();
-ModulePass* createStringEncryptionPass(bool flag, ObfuscationOptions *Options);
+ModulePass* createStringEncryptionPass(ObfuscationOptions *argsOptions);
 void initializeStringEncryptionPass(PassRegistry &Registry);
 
 }

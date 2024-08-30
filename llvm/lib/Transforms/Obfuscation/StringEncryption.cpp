@@ -21,7 +21,6 @@ using namespace llvm;
 namespace {
 struct StringEncryption : public ModulePass {
   static char ID;
-  bool flag;
 
   struct CSPEntry {
     CSPEntry() : ID(0), Offset(0), DecGV(nullptr), DecStatus(nullptr), DecFunc(nullptr) {}
@@ -45,22 +44,16 @@ struct StringEncryption : public ModulePass {
     Function *InitFunc; // InitFunc will use decryted string to initialize DecGV
   };
 
-  ObfuscationOptions *Options;
+  ObfuscationOptions *ArgsOptions;
   CryptoUtils RandomEngine;
   std::vector<CSPEntry *> ConstantStringPool;
   std::map<GlobalVariable *, CSPEntry *> CSPEntryMap;
   std::map<GlobalVariable *, CSUser *> CSUserMap;
-  GlobalVariable *EncryptedStringTable;
+  GlobalVariable *EncryptedStringTable = nullptr;
   std::set<GlobalVariable *> MaybeDeadGlobalVars;
 
-  StringEncryption() : ModulePass(ID) {
-    this->flag = false;
-    Options = nullptr;
-  }
-
-  StringEncryption(bool flag, ObfuscationOptions *Options) : ModulePass(ID) {
-    this->flag = flag;
-    this->Options = Options;
+  StringEncryption(ObfuscationOptions *argsOptions) : ModulePass(ID) {
+    this->ArgsOptions = argsOptions;
     initializeStringEncryptionPass(*PassRegistry::getPassRegistry());
   }
 
@@ -373,10 +366,8 @@ void StringEncryption::lowerGlobalConstantStruct(ConstantStruct *CS, IRBuilder<>
 }
 
 bool StringEncryption::processConstantStringUse(Function *F) {
-  if (!toObfuscate(flag, F, "cse")) {
-    return false;
-  }
-  if (Options && Options->skipFunction(F->getName())) {
+  auto opt = ArgsOptions->toObfuscate(ArgsOptions->cseOpt(), F);
+  if (opt.isEnabled()) {
     return false;
   }
   LLVMContext &Ctx = F->getContext();
@@ -543,10 +534,8 @@ void StringEncryption::deleteUnusedGlobalVariable() {
   }
 }
 
-ModulePass *llvm::createStringEncryptionPass() { return new StringEncryption(); }
-ModulePass *llvm::createStringEncryptionPass(bool flag,
-                                             ObfuscationOptions *Options) {
-  return new StringEncryption(flag, Options);
+ModulePass *llvm::createStringEncryptionPass(ObfuscationOptions *argsOptions) {
+  return new StringEncryption(argsOptions);
 }
 
 INITIALIZE_PASS(StringEncryption, "string-encryption", "Enable IR String Encryption", false, false)

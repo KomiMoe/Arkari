@@ -17,6 +17,7 @@
 #include "llvm/Transforms/Obfuscation/Utils.h"
 #include "llvm/CryptoUtils.h"
 #include "llvm/ADT/Statistic.h"
+#include "llvm/Transforms/Obfuscation/ObfuscationOptions.h"
 
 #define DEBUG_TYPE "flattening"
 
@@ -30,25 +31,17 @@ namespace {
 struct Flattening : public FunctionPass {
   unsigned pointerSize;
   static char ID;  // Pass identification, replacement for typeid
-  bool flag;
   
-  ObfuscationOptions *Options;
+  ObfuscationOptions *ArgsOptions;
   CryptoUtils RandomEngine;
 
-  Flattening(unsigned pointerSize) : FunctionPass(ID) {
+  Flattening(unsigned pointerSize, ObfuscationOptions *argsOptions) : FunctionPass(ID) {
     this->pointerSize = pointerSize;
-    this->flag = false;
-    this->Options = nullptr;
-  }
-
-  Flattening(unsigned pointerSize, bool flag, ObfuscationOptions *Options) : FunctionPass(ID) {
-    this->pointerSize = pointerSize;
-    this->flag = flag;
-    this->Options = Options;
+    this->ArgsOptions = argsOptions;
   }
 
   bool runOnFunction(Function &F);
-  bool flatten(Function *f);
+  bool flatten(Function *f, const ObfOpt& opt);
 };
 }
 
@@ -56,17 +49,19 @@ bool Flattening::runOnFunction(Function &F) {
   Function *tmp = &F;
   bool result = false;
   // Do we obfuscate
-  if (toObfuscate(flag, tmp, "fla")) {
-    if (flatten(tmp)) {
+  const auto opt = ArgsOptions->toObfuscate(ArgsOptions->flaOpt(), &F);
+  if (!opt.isEnabled()) {
+    return result;
+  }
+  if (flatten(tmp, opt)) {
       ++Flattened;
       result = true;
     }
-  }
 
   return result;
 }
 
-bool Flattening::flatten(Function *f) {
+bool Flattening::flatten(Function *f, const ObfOpt& opt) {
   vector<BasicBlock *> origBB;
   BasicBlock *loopEntry;
   BasicBlock *loopEnd;
@@ -315,7 +310,6 @@ bool Flattening::flatten(Function *f) {
 
 char Flattening::ID = 0;
 static RegisterPass<Flattening> X("flattening", "Call graph flattening");
-FunctionPass *llvm::createFlatteningPass(unsigned pointerSize) { return new Flattening(pointerSize); }
-FunctionPass *llvm::createFlatteningPass(unsigned pointerSize, bool flag, ObfuscationOptions *Options) {
-  return new Flattening(pointerSize, flag, Options);
+FunctionPass *llvm::createFlatteningPass(unsigned pointerSize, ObfuscationOptions *argsOptions) {
+  return new Flattening(pointerSize, argsOptions);
 }

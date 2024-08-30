@@ -18,22 +18,15 @@ namespace {
 struct IndirectBranch : public FunctionPass {
   unsigned pointerSize;
   static char ID;
-  bool flag;
   
-  ObfuscationOptions *Options;
+  ObfuscationOptions *ArgsOptions;
   std::map<BasicBlock *, unsigned> BBNumbering;
   std::vector<BasicBlock *> BBTargets;        //all conditional branch targets
   CryptoUtils RandomEngine;
-  IndirectBranch(unsigned pointerSize) : FunctionPass(ID) {
-    this->pointerSize = pointerSize;
-    this->flag = false;
-    this->Options = nullptr;
-  }
 
-  IndirectBranch(unsigned pointerSize, bool flag, ObfuscationOptions *Options) : FunctionPass(ID) {
+  IndirectBranch(unsigned pointerSize, ObfuscationOptions *argsOptions) : FunctionPass(ID) {
     this->pointerSize = pointerSize;
-    this->flag = flag;
-    this->Options = Options;
+    this->ArgsOptions = argsOptions;
   }
 
   StringRef getPassName() const override { return {"IndirectBranch"}; }
@@ -89,11 +82,10 @@ struct IndirectBranch : public FunctionPass {
 
 
   bool runOnFunction(Function &Fn) override {
-    if (!toObfuscate(flag, &Fn, "indbr")) {
-      return false;
-    }
 
-    if (Options && Options->skipFunction(Fn.getName())) {
+    const auto opt = ArgsOptions->toObfuscate(ArgsOptions->indBrOpt(), &Fn);
+
+    if (!opt.isEnabled()) {
       return false;
     }
 
@@ -168,9 +160,7 @@ struct IndirectBranch : public FunctionPass {
 } // namespace llvm
 
 char IndirectBranch::ID = 0;
-FunctionPass *llvm::createIndirectBranchPass(unsigned pointerSize) { return new IndirectBranch(pointerSize); }
-FunctionPass *llvm::createIndirectBranchPass(unsigned pointerSize, bool flag,
-                                             ObfuscationOptions *Options) {
-  return new IndirectBranch(pointerSize, flag, Options);
+FunctionPass *llvm::createIndirectBranchPass(unsigned pointerSize, ObfuscationOptions *argsOptions) {
+  return new IndirectBranch(pointerSize, argsOptions);
 }
 INITIALIZE_PASS(IndirectBranch, "indbr", "Enable IR Indirect Branch Obfuscation", false, false)

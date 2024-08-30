@@ -5,10 +5,9 @@
 namespace llvm {
 class FunctionPass;
 class PassRegistry;
-struct ObfuscationOptions;
+class ObfuscationOptions;
 
-FunctionPass* createIndirectGlobalVariablePass(unsigned pointerSize);
-FunctionPass* createIndirectGlobalVariablePass(unsigned pointerSize, bool flag, ObfuscationOptions *Options);
+FunctionPass* createIndirectGlobalVariablePass(unsigned pointerSize, ObfuscationOptions *argsOptions);
 void initializeIndirectGlobalVariablePass(PassRegistry &Registry);
 
 }
