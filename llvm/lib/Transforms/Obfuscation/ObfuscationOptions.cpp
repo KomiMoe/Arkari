@@ -75,8 +75,24 @@ ObfOpt ObfuscationOptions::toObfuscate(const ObfOpt *option, Function *f) {
       }
       if (const auto levelPos = annotation.find(attrLevel);
         levelPos != std::string::npos) {
+        if (annotation.find(attrLevel, levelPos + 1) != std::string::npos) {
+          f->getContext().diagnose(DiagnosticInfoUnsupported{
+              *f,
+              f->getName() + " has multiple annotations for setting " + result.
+              attributeName() +
+              " factors, What are you the fucking want to do?"});
+          return result.none();
+        }
         int32_t    level = -1;
         const auto equalPos = annotation.find('=', levelPos + 1);
+        if (equalPos == std::string::npos) {
+          f->getContext().diagnose(DiagnosticInfoUnsupported{
+              *f,
+              f->getName() + ": " + annotation +
+              " missing equal sign, sample: " + attrLevel + " = 0"});
+          return result.none();
+        }
+
         for (size_t i = levelPos + attrLevel.length(); i < equalPos; ++i) {
           if (annotation[i] == ' ') {
             continue;
@@ -87,7 +103,8 @@ ObfOpt ObfuscationOptions::toObfuscate(const ObfOpt *option, Function *f) {
               " unexpected characters, sample: " + attrLevel + " = 0"});
           return result.none();
         }
-        for (size_t i = equalPos; i < annotation.length(); ++i) {
+
+        for (size_t i = equalPos + 1; i < annotation.length(); ++i) {
           if (annotation[i] == ' ') {
             continue;
           }
@@ -99,6 +116,7 @@ ObfOpt ObfuscationOptions::toObfuscate(const ObfOpt *option, Function *f) {
               " unexpected character: " + std::string{annotation[i]} + ", sample: " + attrLevel + " = 0"});
             return result.none();
           }
+          break;
         }
         if (level == -1) {
           f->getContext().diagnose(DiagnosticInfoUnsupported{
