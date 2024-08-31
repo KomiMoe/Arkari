@@ -4,6 +4,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/DiagnosticInfo.h"
+#include "llvm/IR/EHPersonalities.h"
 
 // Shamefully borrowed from ../Scalar/RegToMem.cpp :(
 bool valueEscapes(Instruction *Inst) {
@@ -55,6 +56,37 @@ void fixStack(Function *f) {
   } while (tmpReg.size() != 0 || tmpPhi.size() != 0);
 }
 
+CallBase* fixEH(CallBase* CB) {
+  const auto BB = CB->getParent();
+  if (!BB) {
+    return CB;
+  }
+  const auto Fn = BB->getParent();
+  if (!Fn || !Fn->hasPersonalityFn()
+    || !isScopedEHPersonality(classifyEHPersonality(Fn->getPersonalityFn()))) {
+    return CB;
+  }
+  const auto BlockColors = colorEHFunclets(*Fn);
+  const auto BBColor = BlockColors.find(BB);
+  if (BBColor == BlockColors.end()) {
+    return CB;
+  }
+  const auto& ColorVec = BBColor->getSecond();
+  assert(ColorVec.size() == 1 && "non-unique color for block!");
+
+  const auto EHBlock = ColorVec.front();
+  if (!EHBlock || !EHBlock->isEHPad()) {
+    return CB;
+  }
+  const auto EHPad = EHBlock->getFirstNonPHI();
+
+  const OperandBundleDef OB("funclet", EHPad);
+  auto *NewCall = CallBase::addOperandBundle(CB, LLVMContext::OB_funclet, OB, CB);
+  NewCall->copyMetadata(*CB);
+  CB->replaceAllUsesWith(NewCall);
+  CB->eraseFromParent();
+  return NewCall;
+}
 
 void LowerConstantExpr(Function &F) {
   SmallPtrSet<Instruction *, 8> WorkList;

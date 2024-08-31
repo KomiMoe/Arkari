@@ -376,13 +376,7 @@ bool StringEncryption::processConstantStringUse(Function *F) {
   bool Changed = false;
   for (BasicBlock &BB : *F) {
     DecryptedGV.clear();
-    if (BB.isEHPad()) {
-      continue;
-    }
     for (Instruction &Inst: BB) {
-      if (Inst.isEHPad()) {
-        continue;
-      }
       if (PHINode *PHI = dyn_cast<PHINode>(&Inst)) {
         for (unsigned int i = 0; i < PHI->getNumIncomingValues(); ++i) {
           if (GlobalVariable *GV = dyn_cast<GlobalVariable>(PHI->getIncomingValue(i))) {
@@ -395,7 +389,7 @@ bool StringEncryption::processConstantStringUse(Function *F) {
               } else {
                 Instruction *InsertPoint = PHI->getIncomingBlock(i)->getTerminator();
                 IRBuilder<> IRB(InsertPoint);
-                IRB.CreateCall(User->InitFunc, {User->DecGV});
+                fixEH(IRB.CreateCall(User->InitFunc, {User->DecGV}));
                 Inst.replaceUsesOfWith(GV, User->DecGV);
                 MaybeDeadGlobalVars.insert(GV);
                 DecryptedGV.insert(GV);
@@ -415,7 +409,7 @@ bool StringEncryption::processConstantStringUse(Function *F) {
                     EncryptedStringTable->getValueType(),
                     EncryptedStringTable,
                     {IRB.getInt32(0), IRB.getInt32(Entry->Offset)});
-                IRB.CreateCall(Entry->DecFunc, {OutBuf, Data});
+                fixEH(IRB.CreateCall(Entry->DecFunc, {OutBuf, Data}));
 
                 Inst.replaceUsesOfWith(GV, Entry->DecGV);
                 MaybeDeadGlobalVars.insert(GV);
@@ -436,7 +430,7 @@ bool StringEncryption::processConstantStringUse(Function *F) {
                 Inst.replaceUsesOfWith(GV, User->DecGV);
               } else {
                 IRBuilder<> IRB(&Inst);
-                IRB.CreateCall(User->InitFunc, {User->DecGV});
+                fixEH(IRB.CreateCall(User->InitFunc, {User->DecGV}));
                 Inst.replaceUsesOfWith(GV, User->DecGV);
                 MaybeDeadGlobalVars.insert(GV);
                 DecryptedGV.insert(GV);
@@ -448,29 +442,14 @@ bool StringEncryption::processConstantStringUse(Function *F) {
                 Inst.replaceUsesOfWith(GV, Entry->DecGV);
               } else {
                 IRBuilder<> IRB(&Inst);
-
+                
                 Value *OutBuf = IRB.CreateBitCast(Entry->DecGV,
                                                   PointerType::getUnqual(Ctx));
                 Value *Data = IRB.CreateInBoundsGEP(
                     EncryptedStringTable->getValueType(),
                     EncryptedStringTable,
                     {IRB.getInt32(0), IRB.getInt32(Entry->Offset)});
-
-                DenseMap<BasicBlock *, ColorVector> BlockColors = colorEHFunclets(*F);
-                Instruction* EHPad = nullptr;
-                auto BBColor = BlockColors.find(&BB);
-                if (BBColor != BlockColors.end()) {
-                  auto EHBlock = BBColor->getSecond().front();
-                  if (EHBlock && EHBlock->isEHPad()) {
-                    EHPad = EHBlock->getFirstNonPHI();
-                  }
-                }
-                
-                if (EHPad) {
-                  IRB.CreateCall(Entry->DecFunc, {OutBuf, Data}, {OperandBundleDef{"funclet", EHPad}});
-                } else {
-                  IRB.CreateCall(Entry->DecFunc, {OutBuf, Data});
-                }
+                fixEH(IRB.CreateCall(Entry->DecFunc, {OutBuf, Data}));
 
                 Inst.replaceUsesOfWith(GV, Entry->DecGV);
                 MaybeDeadGlobalVars.insert(GV);
