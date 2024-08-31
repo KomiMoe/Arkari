@@ -383,12 +383,6 @@ bool StringEncryption::processConstantStringUse(Function *F) {
       if (Inst.isEHPad()) {
         continue;
       }
-      if (isa<LandingPadInst>(Inst) || isa<CleanupPadInst>(Inst) ||
-        isa<CatchPadInst>(Inst) || isa<CatchReturnInst>(Inst) ||
-        isa<CatchSwitchInst>(Inst) || isa<ResumeInst>(Inst) ||
-        isa<CallInst>(Inst)) {
-        continue;
-      }
       if (PHINode *PHI = dyn_cast<PHINode>(&Inst)) {
         for (unsigned int i = 0; i < PHI->getNumIncomingValues(); ++i) {
           if (GlobalVariable *GV = dyn_cast<GlobalVariable>(PHI->getIncomingValue(i))) {
@@ -461,7 +455,22 @@ bool StringEncryption::processConstantStringUse(Function *F) {
                     EncryptedStringTable->getValueType(),
                     EncryptedStringTable,
                     {IRB.getInt32(0), IRB.getInt32(Entry->Offset)});
-                IRB.CreateCall(Entry->DecFunc, {OutBuf, Data});
+
+                DenseMap<BasicBlock *, ColorVector> BlockColors = colorEHFunclets(*F);
+                Instruction* EHPad = nullptr;
+                auto BBColor = BlockColors.find(&BB);
+                if (BBColor != BlockColors.end()) {
+                  auto EHBlock = BBColor->getSecond().front();
+                  if (EHBlock && EHBlock->isEHPad()) {
+                    EHPad = EHBlock->getFirstNonPHI();
+                  }
+                }
+                
+                if (EHPad) {
+                  IRB.CreateCall(Entry->DecFunc, {OutBuf, Data}, {OperandBundleDef{"funclet", EHPad}});
+                } else {
+                  IRB.CreateCall(Entry->DecFunc, {OutBuf, Data});
+                }
 
                 Inst.replaceUsesOfWith(GV, Entry->DecGV);
                 MaybeDeadGlobalVars.insert(GV);
