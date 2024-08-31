@@ -53,7 +53,7 @@ struct IndirectCall : public FunctionPass {
     }
   }
 
-  GlobalVariable *getIndirectCallees(Function &F, ConstantInt *EncKey) {
+  GlobalVariable *getIndirectCallees(Function &F, ConstantInt *EncKey) const {
     std::string GVName(F.getName().str() + "_IndirectCallees");
     GlobalVariable *GV = F.getParent()->getNamedGlobal(GVName);
     if (GV)

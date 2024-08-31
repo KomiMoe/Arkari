@@ -57,7 +57,7 @@ struct StringEncryption : public ModulePass {
     initializeStringEncryptionPass(*PassRegistry::getPassRegistry());
   }
 
-  bool doFinalization(Module &) {
+  bool doFinalization(Module &) override {
     for (CSPEntry *Entry : ConstantStringPool) {
       delete (Entry);
     }
@@ -75,11 +75,11 @@ struct StringEncryption : public ModulePass {
   StringRef getPassName() const override { return {"StringEncryption"}; }
 
   bool runOnModule(Module &M) override;
-  void collectConstantStringUser(GlobalVariable *CString, std::set<GlobalVariable *> &Users);
-  bool isValidToEncrypt(GlobalVariable *GV);
+  static void collectConstantStringUser(GlobalVariable *CString, std::set<GlobalVariable *> &Users);
+  static bool isValidToEncrypt(GlobalVariable *GV);
   bool processConstantStringUse(Function *F);
   void deleteUnusedGlobalVariable();
-  Function *buildDecryptFunction(Module *M, const CSPEntry *Entry);
+  static Function *buildDecryptFunction(Module *M, const CSPEntry *Entry);
   Function *buildInitFunction(Module *M, const CSUser *User);
   void getRandomBytes(std::vector<uint8_t> &Bytes, uint32_t MinSize, uint32_t MaxSize);
   void lowerGlobalConstant(Constant *CV, IRBuilder<> &IRB, Value *Ptr, Type *Ty);

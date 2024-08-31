@@ -57,7 +57,7 @@ struct IndirectBranch : public FunctionPass {
     }
   }
 
-  GlobalVariable *getIndirectTargets(Function &F, ConstantInt *EncKey) {
+  GlobalVariable *getIndirectTargets(Function &F, ConstantInt *EncKey) const {
     std::string GVName(F.getName().str() + "_IndirectBrTargets");
     GlobalVariable *GV = F.getParent()->getNamedGlobal(GVName);
     if (GV)

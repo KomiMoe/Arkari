@@ -40,7 +40,7 @@ struct Flattening : public FunctionPass {
     this->ArgsOptions = argsOptions;
   }
 
-  bool runOnFunction(Function &F);
+  bool runOnFunction(Function &F) override;
   bool flatten(Function *f, const ObfOpt& opt);
 };
 }

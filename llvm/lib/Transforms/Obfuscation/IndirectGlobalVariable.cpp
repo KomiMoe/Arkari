@@ -43,7 +43,7 @@ struct IndirectGlobalVariable : public FunctionPass {
     }
   }
 
-  GlobalVariable *getIndirectGlobalVariables(Function &F, ConstantInt *EncKey) {
+  GlobalVariable *getIndirectGlobalVariables(Function &F, ConstantInt *EncKey) const {
     std::string GVName(F.getName().str() + "_IndirectGVars");
     GlobalVariable *GV = F.getParent()->getNamedGlobal(GVName);
     if (GV)
