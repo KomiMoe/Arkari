@@ -45,11 +45,19 @@ struct IndirectCall : public FunctionPass {
           }
           CallSites.push_back((CallInst *) &I);
           if (CalleeNumbering.count(Callee) == 0) {
-            CalleeNumbering[Callee] = Callees.size();
+            CalleeNumbering[Callee] = 0;
             Callees.push_back(Callee);
           }
         }
       }
+    }
+
+    long seed = RandomEngine.get_uint32_t();
+    std::default_random_engine e(seed);
+    std::shuffle(Callees.begin(), Callees.end(), e);
+    unsigned N = 0;
+    for (auto Callee:Callees) {
+      CalleeNumbering[Callee] = N++;
     }
   }
 
