@@ -53,7 +53,7 @@ struct IndirectCall : public FunctionPass {
     }
   }
 
-  GlobalVariable *getIndirectCallees(Function &F, ConstantInt *EncKey) const {
+  GlobalVariable *getIndirectCallees0(Function &F, ConstantInt *EncKey) const {
     std::string GVName(F.getName().str() + "_IndirectCallees");
     GlobalVariable *GV = F.getParent()->getNamedGlobal(GVName);
     if (GV)
@@ -77,6 +77,108 @@ struct IndirectCall : public FunctionPass {
     return GV;
   }
 
+  GlobalVariable *getIndirectCallees1(Function &F, ConstantInt *AddKey, ConstantInt *XorKey) const {
+    std::string GVName(F.getName().str() + "_IndirectCallees1");
+    GlobalVariable *GV = F.getParent()->getNamedGlobal(GVName);
+    if (GV)
+      return GV;
+
+    // callee's address
+    std::vector<Constant *> Elements;
+    for (auto Callee:Callees) {
+      Constant *CE = ConstantExpr::getBitCast(
+        Callee, PointerType::getUnqual(F.getContext()));
+      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, XorKey));
+      Elements.push_back(CE);
+    }
+
+    ArrayType *ATy =
+      ArrayType::get(PointerType::getUnqual(F.getContext()), Elements.size());
+    Constant *CA = ConstantArray::get(ATy, ArrayRef<Constant *>(Elements));
+    GV = new GlobalVariable(*F.getParent(), ATy, false, GlobalValue::LinkageTypes::PrivateLinkage,
+      CA, GVName);
+    appendToCompilerUsed(*F.getParent(), {GV});
+    return GV;
+  }
+
+  GlobalVariable * getIndirectCallees2(Function &F, ConstantInt *AddKey, ConstantInt *XorKey) {
+    std::string GVName(F.getName().str() + "_IndirectCallees2");
+    GlobalVariable *GV = F.getParent()->getNamedGlobal(GVName);
+    if (GV)
+      return GV;
+
+
+    auto& Ctx = F.getContext();
+    IntegerType *intType = Type::getInt32Ty(Ctx);
+    if (pointerSize == 8) {
+      intType = Type::getInt64Ty(Ctx);
+    }
+
+    // callee's address
+    std::vector<Constant *> Elements;
+    for (auto Callee:Callees) {
+      Constant *CE = ConstantExpr::getBitCast(
+        Callee, PointerType::getUnqual(F.getContext()));
+      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getNSWMul(XorKey, ConstantInt::get(intType, CalleeNumbering[Callee], false))));
+      Elements.push_back(CE);
+    }
+
+    ArrayType *ATy =
+      ArrayType::get(PointerType::getUnqual(F.getContext()), Elements.size());
+    Constant *CA = ConstantArray::get(ATy, ArrayRef<Constant *>(Elements));
+    GV = new GlobalVariable(*F.getParent(), ATy, false, GlobalValue::LinkageTypes::PrivateLinkage,
+      CA, GVName);
+    appendToCompilerUsed(*F.getParent(), {GV});
+    
+    return GV;
+  }
+
+  std::pair<GlobalVariable *, GlobalVariable *> getIndirectCallees3(Function &F, ConstantInt *AddKey) {
+    std::string GVNameAdd(F.getName().str() + "_IndirectCallees3_Add");
+    std::string GVNameXor(F.getName().str() + "_IndirectCallees3_Xor");
+    GlobalVariable *GVAdd = F.getParent()->getNamedGlobal(GVNameAdd);
+    GlobalVariable *GVXor = F.getParent()->getNamedGlobal(GVNameXor);
+    if (GVAdd && GVXor)
+      return std::make_pair(GVAdd, GVXor);
+
+
+    auto& Ctx = F.getContext();
+    IntegerType *intType = Type::getInt32Ty(Ctx);
+    if (pointerSize == 8) {
+      intType = Type::getInt64Ty(Ctx);
+    }
+
+    // callee's address
+    std::vector<Constant *> Elements;
+    std::vector<Constant *> XorKeys;
+    for (auto Callee:Callees) {
+      uint64_t V = RandomEngine.get_uint64_t();
+      Constant *XorKey = ConstantInt::get(intType, V, false);
+
+      Constant *CE = ConstantExpr::getBitCast(
+        Callee, PointerType::getUnqual(F.getContext()));
+      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getNSWMul(XorKey, ConstantInt::get(intType, CalleeNumbering[Callee], false))));
+
+      XorKey = ConstantExpr::getNot(XorKey);
+      XorKey = ConstantExpr::getXor(XorKey, AddKey);
+      XorKey = ConstantExpr::getNot(XorKey);
+      XorKeys.push_back(XorKey);
+      Elements.push_back(CE);
+    }
+
+    ArrayType *ATy =
+      ArrayType::get(PointerType::getUnqual(F.getContext()), Elements.size());
+    Constant *CA = ConstantArray::get(ATy, ArrayRef<Constant *>(Elements));
+    GVAdd = new GlobalVariable(*F.getParent(), ATy, false, GlobalValue::LinkageTypes::PrivateLinkage,
+      CA, GVNameAdd);
+    appendToCompilerUsed(*F.getParent(), {GVAdd});
+
+    ArrayType *XTy = ArrayType::get(intType, XorKeys.size());
+    Constant *CX = ConstantArray::get(XTy, XorKeys);
+    GVXor = new GlobalVariable(*F.getParent(), XTy, false, GlobalValue::LinkageTypes::PrivateLinkage, CX, GVNameXor);
+
+    return std::make_pair(GVAdd, GVXor);
+  }
 
   bool runOnFunction(Function &Fn) override {
     const auto opt = ArgsOptions->toObfuscate(ArgsOptions->iCallOpt(), &Fn);
@@ -97,21 +199,41 @@ struct IndirectCall : public FunctionPass {
     }
 
     uint64_t V = RandomEngine.get_uint64_t();
+    uint64_t XV = RandomEngine.get_uint64_t();
+
     IntegerType *intType = Type::getInt32Ty(Ctx);
     if (pointerSize == 8) {
       intType = Type::getInt64Ty(Ctx);
     }
     ConstantInt *EncKey = ConstantInt::get(intType, V, false);
     ConstantInt *EncKey1 = ConstantInt::get(intType, -V, false);
-
-    Value *MySecret = ConstantInt::get(intType, 0, true);
-
     ConstantInt *Zero = ConstantInt::get(intType, 0);
-    GlobalVariable *Targets = getIndirectCallees(Fn, EncKey1);
+    ConstantInt *One = ConstantInt::get(intType, 1);
+
+    GlobalVariable *GXorKey = nullptr;
+    GlobalVariable *Targets = nullptr;
+    GlobalVariable *XorKeys = nullptr;
+
+    if (opt.level() == 0) {
+      Targets = getIndirectCallees0(Fn, EncKey1);
+    } else if (opt.level() == 1 || opt.level() == 2) {
+      ConstantInt *CXK = ConstantInt::get(intType, XV, false);
+      GXorKey = new GlobalVariable(*Fn.getParent(), CXK->getType(), false, GlobalValue::LinkageTypes::PrivateLinkage,
+        CXK, Fn.getName() + "_ICallXorKey");
+      appendToCompilerUsed(*Fn.getParent(), {GXorKey});
+
+      if (opt.level() == 1) {
+        Targets = getIndirectCallees1(Fn, EncKey1, CXK);
+      } else {
+        Targets = getIndirectCallees2(Fn, EncKey1, CXK);
+      }
+    } else {
+      auto [fst, snd] = getIndirectCallees3(Fn, EncKey1);
+      Targets = fst;
+      XorKeys = snd;
+    }
 
     for (auto CI : CallSites) {
-      SmallVector<Value *, 8> Args;
-      SmallVector<AttributeSet, 8> ArgAttrVec;
 
       CallBase *CB = CI;
 
@@ -119,35 +241,45 @@ struct IndirectCall : public FunctionPass {
       FunctionType *FTy = CB->getFunctionType();
       IRBuilder<> IRB(CB);
 
-      Args.clear();
-      ArgAttrVec.clear();
-
       Value *Idx = ConstantInt::get(intType, CalleeNumbering[CB->getCalledFunction()]);
       Value *GEP = IRB.CreateGEP(
           Targets->getValueType(), Targets,
           {Zero, Idx});
-      LoadInst *EncDestAddr = IRB.CreateLoad(
+      Value *EncDestAddr = IRB.CreateLoad(
           GEP->getType(), GEP,
           CI->getName());
 
-      const AttributeList &CallPAL = CB->getAttributes();
-      auto I = CB->arg_begin();
-      unsigned i = 0;
+      Value *DecKey = EncKey;
 
-      for (unsigned e = FTy->getNumParams(); i != e; ++I, ++i) {
-        Args.push_back(*I);
-        AttributeSet Attrs = CallPAL.getParamAttrs(i);
-        ArgAttrVec.push_back(Attrs);
+      if (GXorKey) {
+        LoadInst *XorKey = IRB.CreateLoad(GXorKey->getValueType(), GXorKey);
+        XorKey->setVolatile(true);
+
+        if (opt.level() == 1) {
+          DecKey = IRB.CreateXor(EncKey1, XorKey);
+          DecKey = IRB.CreateAdd(IRB.CreateNot(DecKey), One);
+        } else if (opt.level() == 2) {
+          DecKey = IRB.CreateXor(EncKey1, IRB.CreateNSWMul(XorKey, Idx));
+          DecKey = IRB.CreateAdd(IRB.CreateNot(DecKey), One);
+        }
       }
 
-      for (auto E = CB->arg_end(); I != E; ++I, ++i) {
-        Args.push_back(*I);
-        ArgAttrVec.push_back(CallPAL.getParamAttrs(i));
+      if (XorKeys) {
+        Value *XorKeysGEP = IRB.CreateGEP(XorKeys->getValueType(), XorKeys, {Zero, Idx});
+        
+        Value *XorKey = IRB.CreateLoad(intType, XorKeysGEP);
+        dyn_cast<LoadInst>(XorKey)->setVolatile(true);
+
+        XorKey = IRB.CreateNot(XorKey);
+        XorKey = IRB.CreateXor(XorKey, EncKey1);
+        XorKey = IRB.CreateNot(XorKey);
+
+        DecKey = IRB.CreateXor(EncKey1, IRB.CreateNSWMul(XorKey, Idx));
+        DecKey = IRB.CreateAdd(IRB.CreateNot(DecKey), One);
       }
 
-      Value *Secret = IRB.CreateAdd(EncKey, MySecret);
       Value *DestAddr = IRB.CreateGEP(Type::getInt8Ty(Ctx),
-          EncDestAddr, Secret);
+          EncDestAddr, DecKey);
 
       Value *FnPtr = IRB.CreateBitCast(DestAddr, FTy->getPointerTo());
       FnPtr->setName("Call_" + Callee->getName());
