@@ -155,9 +155,9 @@ struct IndirectBranch : public FunctionPass {
       Constant *CE = ConstantExpr::getBitCast(BlockAddress::get(BB), PointerType::getUnqual(F.getContext()));
       CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getNSWMul(XorKey, ConstantInt::get(intType, BBNumbering[BB], false))));
 
-      XorKey = ConstantExpr::getNot(XorKey);
+      XorKey = ConstantExpr::getNSWNeg(XorKey);
       XorKey = ConstantExpr::getXor(XorKey, AddKey);
-      XorKey = ConstantExpr::getNot(XorKey);
+      XorKey = ConstantExpr::getNSWNeg(XorKey);
       XorKeys.push_back(XorKey);
       Elements.push_back(CE);
     }
@@ -213,7 +213,6 @@ struct IndirectBranch : public FunctionPass {
     ConstantInt *EncKey = ConstantInt::get(intType, V, false);
     ConstantInt *EncKey1 = ConstantInt::get(intType, -V, false);
     ConstantInt *Zero = ConstantInt::get(intType, 0);
-    ConstantInt *One = ConstantInt::get(intType, 1);
 
     GlobalVariable *GXorKey = nullptr;
     GlobalVariable *DestBBs = nullptr;
@@ -266,10 +265,10 @@ struct IndirectBranch : public FunctionPass {
 
           if (opt.level() == 1) {
             DecKey = IRB.CreateXor(EncKey1, XorKey);
-            DecKey = IRB.CreateAdd(IRB.CreateNot(DecKey), One);
+            DecKey = IRB.CreateNSWNeg(DecKey);
           } else if (opt.level() == 2) {
             DecKey = IRB.CreateXor(EncKey1, IRB.CreateNSWMul(XorKey, Idx));
-            DecKey = IRB.CreateAdd(IRB.CreateNot(DecKey), One);
+            DecKey = IRB.CreateNSWNeg(DecKey);
           }
         }
 
@@ -279,12 +278,12 @@ struct IndirectBranch : public FunctionPass {
           Value *XorKey = IRB.CreateLoad(intType, XorKeysGEP);
           dyn_cast<LoadInst>(XorKey)->setVolatile(true);
 
-          XorKey = IRB.CreateNot(XorKey);
+          XorKey = IRB.CreateNSWNeg(XorKey);
           XorKey = IRB.CreateXor(XorKey, EncKey1);
-          XorKey = IRB.CreateNot(XorKey);
+          XorKey = IRB.CreateNSWNeg(XorKey);
 
           DecKey = IRB.CreateXor(EncKey1, IRB.CreateNSWMul(XorKey, Idx));
-          DecKey = IRB.CreateAdd(IRB.CreateNot(DecKey), One);
+          DecKey = IRB.CreateNSWNeg(DecKey);
         }
 
         Value *DestAddr = IRB.CreateGEP(
