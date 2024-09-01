@@ -176,6 +176,7 @@ struct IndirectCall : public FunctionPass {
     ArrayType *XTy = ArrayType::get(intType, XorKeys.size());
     Constant *CX = ConstantArray::get(XTy, XorKeys);
     GVXor = new GlobalVariable(*F.getParent(), XTy, false, GlobalValue::LinkageTypes::PrivateLinkage, CX, GVNameXor);
+    appendToCompilerUsed(*F.getParent(), {GVXor});
 
     return std::make_pair(GVAdd, GVXor);
   }
