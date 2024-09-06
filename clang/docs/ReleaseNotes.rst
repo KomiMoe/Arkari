@@ -1221,6 +1221,9 @@ Arm and AArch64 Support
    ``-mabi=pauthtest`` option or via specifying ``pauthtest`` environment part of
    target triple.
 
+ - The C23 ``_BitInt`` implementation has been brought into compliance
+   with AAPCS32 and AAPCS64.
+
 Android Support
 ^^^^^^^^^^^^^^^
 
@@ -1276,6 +1279,14 @@ RISC-V Support
   accesses may be created. ``-m[no-]strict-align`` applies to both scalar and
   vector.
 
+PowerPC Support
+^^^^^^^^^^^^^^^
+
+- Clang now emits errors for impossible ``__attribute__((musttail))``.
+- Added support for ``-mcpu=[pwr11 | power11]`` and ``-mtune=[pwr11 | power11]``.
+- Added support for ``builtin_cpu_supports`` on AIX, along with a subset of
+  features that can be queried.
+
 CUDA/HIP Language Changes
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1294,6 +1305,14 @@ AIX Support
   base is encoded as an immediate operand.
   This access sequence is not used for TLS variables larger than 32KB, and is
   currently only supported on 64-bit mode.
+- Introduced the options ``-mtocdata/-mno-tocdata`` to enable/disable TOC data
+  transformations for the listed suitable variables.
+- Introduced the ``-maix-shared-lib-tls-model-opt`` option to enable the tuning
+  of changing local-dynamic mode access(es) to initial-exec access(es) at the
+  function level on 64-bit mode.
+- Clang now emits errors for ``-gdwarf-5``.
+- Added the support of the OpenMP runtime libomp on AIX. OpenMP applications can be
+  compiled with ``-fopenmp`` and execute on AIX.
 
 NetBSD Support
 ^^^^^^^^^^^^^^
@@ -1391,6 +1410,11 @@ Crash and bug fixes
 - Z3 crosschecking (aka. Z3 refutation) is now bounded, and can't consume
   more total time than the eymbolic execution itself. (#GH97298)
 
+- In clang-18, we regressed in terms of analysis time for projects having many
+  nested loops with buffer indexing or shifting or other binary operations.
+  For example, functions computing different hash values. Some of this slowdown
+  was attributed to taint analysis, which is fixed now. (#GH105493)
+
 - ``std::addressof``, ``std::as_const``, ``std::forward``,
   ``std::forward_like``, ``std::move``, ``std::move_if_noexcept``, are now
   modeled just like their builtin counterpart. (#GH94193)
@@ -1451,6 +1475,7 @@ OpenMP Support
 --------------
 
 - Added support for the `[[omp::assume]]` attribute.
+- AIX added an include directory for ``omp.h`` at ``/opt/IBM/openxlCSDK/include/openmp``.
 
 Additional Information
 ======================

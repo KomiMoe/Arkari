@@ -3646,8 +3646,8 @@ TEST_F(FormatTest, FormatsClasses) {
                "    : public aaaaaaaaaaaaaaaaaaa<aaaaaaaaaaaaaaaaaaaaa,\n"
                "                                 aaaaaaaaaaaaaaaaaaaaaa> {};");
   verifyFormat("template <class R, class C>\n"
-               "struct Aaaaaaaaaaaaaaaaa<R (C:: *)(int) const>\n"
-               "    : Aaaaaaaaaaaaaaaaa<R (C:: *)(int)> {};");
+               "struct Aaaaaaaaaaaaaaaaa<R (C::*)(int) const>\n"
+               "    : Aaaaaaaaaaaaaaaaa<R (C::*)(int)> {};");
   verifyFormat("class ::A::B {};");
 }
 
@@ -11141,10 +11141,10 @@ TEST_F(FormatTest, UnderstandsBinaryOperators) {
 }
 
 TEST_F(FormatTest, UnderstandsPointersToMembers) {
-  verifyFormat("int A:: *x;");
-  verifyFormat("int (S:: *func)(void *);");
-  verifyFormat("void f() { int (S:: *func)(void *); }");
-  verifyFormat("typedef bool *(Class:: *Member)() const;");
+  verifyFormat("int A::*x;");
+  verifyFormat("int (S::*func)(void *);");
+  verifyFormat("void f() { int (S::*func)(void *); }");
+  verifyFormat("typedef bool *(Class::*Member)() const;");
   verifyFormat("void f() {\n"
                "  (a->*f)();\n"
                "  a->*x;\n"
@@ -11162,16 +11162,16 @@ TEST_F(FormatTest, UnderstandsPointersToMembers) {
 
   FormatStyle Style = getLLVMStyle();
   EXPECT_EQ(Style.PointerAlignment, FormatStyle::PAS_Right);
-  verifyFormat("typedef bool *(Class:: *Member)() const;", Style);
-  verifyFormat("void f(int A:: *p) { int A:: *v = &A::B; }", Style);
+  verifyFormat("typedef bool *(Class::*Member)() const;", Style);
+  verifyFormat("void f(int A::*p) { int A::*v = &A::B; }", Style);
 
   Style.PointerAlignment = FormatStyle::PAS_Left;
-  verifyFormat("typedef bool* (Class::* Member)() const;", Style);
+  verifyFormat("typedef bool* (Class::*Member)() const;", Style);
   verifyFormat("void f(int A::* p) { int A::* v = &A::B; }", Style);
 
   Style.PointerAlignment = FormatStyle::PAS_Middle;
-  verifyFormat("typedef bool * (Class:: * Member)() const;", Style);
-  verifyFormat("void f(int A:: * p) { int A:: * v = &A::B; }", Style);
+  verifyFormat("typedef bool * (Class::*Member)() const;", Style);
+  verifyFormat("void f(int A::* p) { int A::* v = &A::B; }", Style);
 }
 
 TEST_F(FormatTest, UnderstandsUnaryOperators) {
@@ -12514,7 +12514,7 @@ TEST_F(FormatTest, FormatsFunctionTypes) {
   verifyFormat("int (*func)(void *);");
   verifyFormat("void f() { int (*func)(void *); }");
   verifyFormat("template <class CallbackClass>\n"
-               "using Callback = void (CallbackClass:: *)(SomeObject *Data);");
+               "using MyCallback = void (CallbackClass::*)(SomeObject *Data);");
 
   verifyGoogleFormat("A<void*(int*, SomeType*)>;");
   verifyGoogleFormat("void* (*a)(int);");
@@ -19186,6 +19186,24 @@ TEST_F(FormatTest, AlignConsecutiveAssignments) {
                "X        = func<Type, Type>(looooooooooooooooooooooooong,\n"
                "                            arrrrrrrrrrg);",
                Alignment);
+
+  Alignment.ColumnLimit = 80;
+  Alignment.SpacesInAngles = FormatStyle::SIAS_Always;
+  verifyFormat("void **ptr = reinterpret_cast< void ** >(unkn);\n"
+               "ptr        = reinterpret_cast< void ** >(ptr[0]);",
+               Alignment);
+  verifyFormat("quint32 *dstimg  = reinterpret_cast< quint32 * >(out(i));\n"
+               "quint32 *dstmask = reinterpret_cast< quint32 * >(outmask(i));",
+               Alignment);
+
+  Alignment.SpacesInParens = FormatStyle::SIPO_Custom;
+  Alignment.SpacesInParensOptions.InCStyleCasts = true;
+  verifyFormat("void **ptr = ( void ** )unkn;\n"
+               "ptr        = ( void ** )ptr[0];",
+               Alignment);
+  verifyFormat("quint32 *dstimg  = ( quint32 * )out.scanLine(i);\n"
+               "quint32 *dstmask = ( quint32 * )outmask.scanLine(i);",
+               Alignment);
 }
 
 TEST_F(FormatTest, AlignConsecutiveBitFields) {
@@ -19437,13 +19455,13 @@ TEST_F(FormatTest, AlignConsecutiveDeclarations) {
                "int   bbbbbbb = 0;",
                Alignment);
   // http://llvm.org/PR68079
-  verifyFormat("using Fn   = int (A:: *)();\n"
-               "using RFn  = int (A:: *)() &;\n"
-               "using RRFn = int (A:: *)() &&;",
+  verifyFormat("using Fn   = int (A::*)();\n"
+               "using RFn  = int (A::*)() &;\n"
+               "using RRFn = int (A::*)() &&;",
                Alignment);
-  verifyFormat("using Fn   = int (A:: *)();\n"
-               "using RFn  = int *(A:: *)() &;\n"
-               "using RRFn = double (A:: *)() &&;",
+  verifyFormat("using Fn   = int (A::*)();\n"
+               "using RFn  = int *(A::*)() &;\n"
+               "using RRFn = double (A::*)() &&;",
                Alignment);
 
   // PAS_Right
