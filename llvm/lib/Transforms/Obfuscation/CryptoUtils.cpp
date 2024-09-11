@@ -34,6 +34,9 @@
 #include <random>
 #include <chrono>
 #endif
+#if defined(__linux__)
+#include <fstream>
+#endif
 
 // Stats
 #define DEBUG_TYPE "CryptoUtils"
