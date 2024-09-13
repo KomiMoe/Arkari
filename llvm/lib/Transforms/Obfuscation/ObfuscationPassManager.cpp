@@ -11,7 +11,7 @@
 using namespace llvm;
 
 static cl::opt<bool>
-EnableIRObfusaction("irobf", cl::init(false), cl::NotHidden,
+EnableIRObfuscation("irobf", cl::init(false), cl::NotHidden,
                     cl::desc("Enable IR Code Obfuscation."),
                     cl::ZeroOrMore);
 static cl::opt<bool>
@@ -108,10 +108,10 @@ struct ObfuscationPassManager : public ModulePass {
 
     if (EnableIndirectBr || EnableIndirectCall || EnableIndirectGV ||
         EnableIRFlattening || EnableIRStringEncryption) {
-      EnableIRObfusaction = true;
+      EnableIRObfuscation = true;
     }
 
-    if (!EnableIRObfusaction) {
+    if (!EnableIRObfuscation) {
       return false;
     }
 
