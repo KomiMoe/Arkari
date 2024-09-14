@@ -68,7 +68,7 @@ $ make
 // 当然如果你不嫌麻烦也可以用 __attribute((__annotate__(("+indbr +cse"))))
 ```
 
-如果你不希望对整个程序都启用Pass，那么你可以在编译选项中只添加**-mllvm -irobf**，然后使用**annotate**控制需要混淆的函数，需要注意的是仅开启**-irobf**不使用**annotate**不会运行任何混淆Pass，当然，不添加任何混淆参数的情况下，仅使用**annotate**也不会启用任何Pass
+如果你不希望对整个程序都启用Pass，那么你可以在编译选项中只添加 **-mllvm -irobf** ，然后使用 **annotate** 控制需要混淆的函数，需要注意的是仅开启 **-irobf** 不使用 **annotate** 不会运行任何混淆Pass，当然，不添加任何混淆参数的情况下，仅使用 **annotate** 也不会启用任何Pass
 
 当然以下情况会报错：
 
