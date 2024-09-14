@@ -52,23 +52,36 @@ $ make
 ```
 
 可以通过**annotate**对特定函数**开启/关闭**指定混淆选项：
+(Win64-19.1.0-rc3-obf1.5.0-rc2 or later)
+
+annotate的优先级永远高于命令行参数
+
+可用的annotate:
+- fla
+- icall
+- indbr
+- indgv
 
 ```cpp
 //fla表示编译选项中的cff
-[[clang::annotate("-fla -icall")]] int foo(auto a, auto b){
+
+[[clang::annotate("-fla -icall")]]
+int foo(auto a, auto b) {
     return a + b;
 }
 
-[[clang::annotate("+indbr +cse")]] int main(int argc, char** argv) {
+[[clang::annotate("+indbr +icall")]]
+int main(int argc, char** argv) {
     foo(1, 2);
     std::printf("hello clang\n");
-
     return 0;
 }
-// 当然如果你不嫌麻烦也可以用 __attribute((__annotate__(("+indbr +cse"))))
+// 当然如果你不嫌麻烦也可以用 __attribute((__annotate__(("+indbr"))))
 ```
 
-如果你不希望对整个程序都启用Pass，那么你可以在编译选项中只添加 **-mllvm -irobf** ，然后使用 **annotate** 控制需要混淆的函数，需要注意的是仅开启 **-irobf** 不使用 **annotate** 不会运行任何混淆Pass，当然，不添加任何混淆参数的情况下，仅使用 **annotate** 也不会启用任何Pass
+如果你不希望对整个程序都启用Pass，那么你可以在编译命令行参数中只添加 **-mllvm -irobf** ，然后使用 **annotate** 控制需要混淆的函数，仅开启 **-irobf** 不使用 **annotate** 不会运行任何混淆Pass
+
+当然，不添加任何混淆命令行参数的情况下，仅使用 **annotate** 也***不会***启用任何Pass
 
 当然以下情况会报错：
 
@@ -79,6 +92,32 @@ $ make
 ```
 
 你**不能**同时开启和关闭某个混淆参数！
+
+
+可以使用下列几种方法之一单独控制某个混淆Pass的强度
+(Win64-19.1.0-rc3-obf1.5.1-rc5 or later)
+
+如果不指定强度则默认强度为0，annotate的优先级永远高于命令行参数
+
+可用的Pass:
+- icall
+- indbr
+- indgv
+
+1.通过**annotate**对特定函数指定混淆强度：
+```cpp
+//^icall=表示指定icall的强度
+//+icall表示当前函数启用icall混淆, 如果你在命令行中启用了icall则无需添加+icall
+
+[[clang::annotate("+icall ^icall=3")]]
+int main() {
+    std::cout << "HelloWorld" << std::endl;
+    return 0;
+}
+```
+
+2.通过命令行参数指定特定混淆Pass的强度
+Eg.间接函数调用,并加密目标函数地址,强度设置为3(-mllvm -irobf-icall -mllvm -level-icall=3)
 
 ## 参考资源
 
