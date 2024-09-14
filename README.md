@@ -101,9 +101,9 @@ int fool(auto a, auto b){
 如果不指定强度则默认强度为0，annotate的优先级永远高于命令行参数
 
 可用的Pass:
-- icall
-- indbr
-- indgv
+- icall(强度范围: 0-3)
+- indbr(强度范围: 0-3)
+- indgv(强度范围: 0-3)
 
 1.通过**annotate**对特定函数指定混淆强度：
 ```cpp
