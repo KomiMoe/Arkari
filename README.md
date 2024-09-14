@@ -32,7 +32,7 @@ run:
 
 mkdir build_ninja
 cd build_ninja
-cmake -DCMAKE_CXX_FLAGS="/utf-8" -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld;lldb" -G "Ninja" ../llvm
+cmake -DCMAKE_CXX_FLAGS="/utf-8" -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang;lld;lldb" -G "Ninja" ../llvm
 ninja
 
 ```
@@ -83,15 +83,16 @@ int main(int argc, char** argv) {
 
 当然，不添加任何混淆命令行参数的情况下，仅使用 **annotate** 也***不会***启用任何Pass
 
+你**不能**同时开启和关闭某个混淆参数！
 当然以下情况会报错：
 
 ```cpp
-[[clang::annotate("-fla +fla")]] int fool(auto a, auto b){
+[[clang::annotate("-fla +fla")]]
+int fool(auto a, auto b){
     return a + b;
 }
 ```
 
-你**不能**同时开启和关闭某个混淆参数！
 
 
 可以使用下列几种方法之一单独控制某个混淆Pass的强度
@@ -117,6 +118,7 @@ int main() {
 ```
 
 2.通过命令行参数指定特定混淆Pass的强度
+
 Eg.间接函数调用,并加密目标函数地址,强度设置为3(-mllvm -irobf-icall -mllvm -level-icall=3)
 
 ## 参考资源
