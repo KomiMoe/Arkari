@@ -19,15 +19,30 @@ EnableIndirectBr("irobf-indbr", cl::init(false), cl::NotHidden,
                  cl::desc("Enable IR Indirect Branch Obfuscation."),
                  cl::ZeroOrMore);
 
+static cl::opt<uint32_t>
+LevelIndirectBr("level-indbr", cl::init(0), cl::NotHidden,
+  cl::desc("Set IR Indirect Branch Obfuscation Level."),
+  cl::ZeroOrMore);
+
 static cl::opt<bool>
 EnableIndirectCall("irobf-icall", cl::init(false), cl::NotHidden,
                    cl::desc("Enable IR Indirect Call Obfuscation."),
                    cl::ZeroOrMore);
 
+static cl::opt<uint32_t>
+LevelIndirectCall("level-icall", cl::init(0), cl::NotHidden,
+  cl::desc("Set IR Indirect Call Obfuscation Level."),
+  cl::ZeroOrMore);
+
 static cl::opt<bool> EnableIndirectGV(
     "irobf-indgv", cl::init(false), cl::NotHidden,
     cl::desc("Enable IR Indirect Global Variable Obfuscation."),
     cl::ZeroOrMore);
+
+static cl::opt<uint32_t> LevelIndirectGV(
+  "level-indgv", cl::init(0), cl::NotHidden,
+  cl::desc("Set IR Indirect Global Variable Obfuscation Level."),
+  cl::ZeroOrMore);
 
 static cl::opt<bool> EnableIRFlattening(
     "irobf-cff", cl::init(false), cl::NotHidden,
@@ -96,9 +111,9 @@ struct ObfuscationPassManager : public ModulePass {
 
   static ObfuscationOptions *getOptions() {
     ObfuscationOptions *Options = new ObfuscationOptions{
-        new ObfOpt{EnableIndirectBr, 0, "indbr"},
-        new ObfOpt{EnableIndirectCall, 0, "icall"},
-        new ObfOpt{EnableIndirectGV, 0, "indgv"},
+        new ObfOpt{EnableIndirectBr, LevelIndirectBr, "indbr"},
+        new ObfOpt{EnableIndirectCall, LevelIndirectCall, "icall"},
+        new ObfOpt{EnableIndirectGV, LevelIndirectGV, "indgv"},
         new ObfOpt{EnableIRFlattening, 0, "fla"},
         new ObfOpt{EnableIRStringEncryption, 0, "cse"}};
     return Options;
