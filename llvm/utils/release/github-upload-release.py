@@ -84,7 +84,7 @@ parser.add_argument("--files", nargs="+", type=str)
 
 args = parser.parse_args()
 
-gh = github.Github(args.token)
+gh = github.Github(args.user_token)
 arkari_repo = gh.get_user().get_repo("Arkari")
 
 if args.user:
