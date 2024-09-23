@@ -33,8 +33,7 @@
 #ifdef _WIN32
 #include <random>
 #include <chrono>
-#endif
-#if defined(__linux__)
+#else
 #include <fstream>
 #endif
 
