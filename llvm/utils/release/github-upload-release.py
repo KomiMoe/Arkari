@@ -36,10 +36,10 @@ from textwrap import dedent
 
 def create_release(repo, release, tag=None, name=None, message=None):
     if not tag:
-        tag = "{}".format(release)
+        tag = "llvmorg-{}".format(release)
 
     if not name:
-        name = "{}".format(release)
+        name = "Arkari {}".format(release)
 
     if not message:
         message = dedent(
