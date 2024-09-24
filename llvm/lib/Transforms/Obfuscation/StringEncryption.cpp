@@ -72,6 +72,27 @@ struct StringEncryption : public ModulePass {
     return false;
   }
 
+  static bool isSafeToDelete(const Constant *C) {
+    SmallVector<const Constant *, 8> Worklist;
+    SmallPtrSet<const Constant *, 8> Visited;
+    Worklist.push_back(C);
+    while (!Worklist.empty()) {
+      const Constant *C = Worklist.pop_back_val();
+      if (!Visited.insert(C).second)
+        continue;
+      if (isa<GlobalValue>(C) || isa<ConstantData>(C))
+        return false;
+
+      for (const User *U : C->users()) {
+        if (const Constant *CU = dyn_cast<Constant>(U))
+          Worklist.push_back(CU);
+        else
+          return false;
+      }
+    }
+    return true;
+  }
+
   StringRef getPassName() const override { return {"StringEncryption"}; }
 
   bool runOnModule(Module &M) override;
@@ -509,7 +530,7 @@ void StringEncryption::deleteUnusedGlobalVariable() {
         if (GV->hasInitializer()) {
           Constant *Init = GV->getInitializer();
           GV->setInitializer(nullptr);
-          if (isSafeToDestroyConstant(Init))
+          if (isSafeToDelete(Init))
             Init->destroyConstant();
         }
         Iter = MaybeDeadGlobalVars.erase(Iter);
