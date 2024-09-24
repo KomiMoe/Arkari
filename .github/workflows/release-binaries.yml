@@ -467,6 +467,8 @@ jobs:
       run: |
         ./llvm/utils/release/github-upload-release.py \
         --token ${{ github.token }} \
+        --user ${{ github.actor }} \
+        --user-token ${{ secrets.RELEASE_TASKS_USER_TOKEN }} \
         --release ${{ needs.prepare.outputs.release-version }} \
         upload \
         --files ${{ needs.prepare.outputs.release-binary-filename }}*
