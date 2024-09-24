@@ -50,7 +50,7 @@ jobs:
   prepare:
     name: Prepare to build binaries
     runs-on: ${{ inputs.runs-on }}
-    if: github.repository == 'KomiMoe/Arkari'
+    if: github.repository == 'llvm/llvm-project'
     outputs:
       release-version: ${{ steps.vars.outputs.release-version }}
       ref: ${{ steps.vars.outputs.ref }}
@@ -156,14 +156,14 @@ jobs:
   build-stage1:
     name: "Build Stage 1"
     needs: prepare
-    if: github.repository == 'KomiMoe/Arkari'
+    if: github.repository == 'llvm/llvm-project'
     runs-on: ${{ inputs.runs-on }}
     steps:
 
     - name: Checkout Actions
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       with:
-        ref: ${{ (github.event_name == 'pull_request' && github.sha) || 'llvm-19.x' }}
+        ref: ${{ (github.event_name == 'pull_request' && github.sha) || 'main' }}
         sparse-checkout: |
           .github/workflows/
         sparse-checkout-cone-mode: false
@@ -231,13 +231,13 @@ jobs:
     needs:
       - prepare
       - build-stage1
-    if: github.repository == 'KomiMoe/Arkari'
+    if: github.repository == 'llvm/llvm-project'
     runs-on: ${{ inputs.runs-on }}
     steps:
     - name: Checkout Actions
       uses: actions/checkout@v4
       with:
-        ref: ${{ (github.event_name == 'pull_request' && github.sha) || 'llvm-19.x' }}
+        ref: ${{ (github.event_name == 'pull_request' && github.sha) || 'main' }}
         sparse-checkout: |
           .github/workflows/
         sparse-checkout-cone-mode: false
@@ -265,13 +265,13 @@ jobs:
     needs:
       - prepare
       - build-stage2
-    if: github.repository == 'KomiMoe/Arkari'
+    if: github.repository == 'llvm/llvm-project'
     runs-on: ${{ inputs.runs-on }}
     steps:
     - name: Checkout Actions
       uses: actions/checkout@v4
       with:
-        ref: ${{ (github.event_name == 'pull_request' && github.sha) || 'llvm-19.x' }}
+        ref: ${{ (github.event_name == 'pull_request' && github.sha) || 'main' }}
         sparse-checkout: |
           .github/workflows/
         sparse-checkout-cone-mode: false
@@ -320,7 +320,7 @@ jobs:
     - name: Checkout Actions
       uses: actions/checkout@v4
       with:
-        ref: ${{ (github.event_name == 'pull_request' && github.sha) || 'llvm-19.x' }}
+        ref: ${{ (github.event_name == 'pull_request' && github.sha) || 'main' }}
         sparse-checkout: |
           .github/workflows/
         sparse-checkout-cone-mode: false
@@ -370,7 +370,7 @@ jobs:
     - name: Checkout Actions
       uses: actions/checkout@v4
       with:
-        ref: ${{ (github.event_name == 'pull_request' && github.sha) || 'llvm-19.x' }}
+        ref: ${{ (github.event_name == 'pull_request' && github.sha) || 'main' }}
         sparse-checkout: |
           .github/workflows/
         sparse-checkout-cone-mode: false
@@ -467,8 +467,6 @@ jobs:
       run: |
         ./llvm/utils/release/github-upload-release.py \
         --token ${{ github.token }} \
-        --user ${{ github.actor }} \
-        --user-token ${{ secrets.RELEASE_TASKS_USER_TOKEN }} \
         --release ${{ needs.prepare.outputs.release-version }} \
         upload \
         --files ${{ needs.prepare.outputs.release-binary-filename }}*
@@ -479,13 +477,13 @@ jobs:
       - prepare
       - build-stage3-all
     if: >-
-      github.repository == 'KomiMoe/Arkari'
+      github.repository == 'llvm/llvm-project'
     runs-on: ${{ inputs.runs-on }}
     steps:
     - name: Checkout Actions
       uses: actions/checkout@v4
       with:
-        ref: ${{ (github.event_name == 'pull_request' && github.sha) || 'llvm-19.x' }}
+        ref: ${{ (github.event_name == 'pull_request' && github.sha) || 'main' }}
         sparse-checkout: |
           .github/workflows/
         sparse-checkout-cone-mode: false
