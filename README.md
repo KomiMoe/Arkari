@@ -32,8 +32,9 @@ run:
 
 mkdir build_ninja
 cd build_ninja
-cmake -DCMAKE_CXX_FLAGS="/utf-8" -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang;lld;lldb" -G "Ninja" ../llvm
+cmake -DCMAKE_CXX_FLAGS="/utf-8" -DCMAKE_INSTALL_PREFIX="./install" -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="clang;lld;lldb" -G "Ninja" ../llvm
 ninja
+ninja install
 
 ```
 
@@ -120,6 +121,12 @@ int main() {
 2.通过命令行参数指定特定混淆Pass的强度
 
 Eg.间接函数调用,并加密目标函数地址,强度设置为3(-mllvm -irobf-icall -mllvm -level-icall=3)
+
+## Acknowledgements
+
+Thanks to [JetBrains](https://www.jetbrains.com/?from=KomiMoe) for providing free licenses such as [Resharper C++](https://www.jetbrains.com/resharper-cpp/?from=KomiMoe) for my open-source projects.
+
+[<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/ReSharperCPP_icon.png" alt="ReSharper C++ logo." width=200>](https://www.jetbrains.com/resharper-cpp/?from=KomiMoe)
 
 ## 参考资源
 
