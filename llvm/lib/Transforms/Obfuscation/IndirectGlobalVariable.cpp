@@ -254,8 +254,7 @@ struct IndirectGlobalVariable : public FunctionPass {
 
             Value *DecKey = EncKey;
             if (GXorKey) {
-              LoadInst *XorKey = IRB.CreateLoad(GXorKey->getValueType(), GXorKey);
-              XorKey->setVolatile(true);
+              LoadInst *XorKey = IRB.CreateLoad(GXorKey->getValueType(), GXorKey, true);
 
               if (opt.level() == 1) {
                 DecKey = IRB.CreateXor(EncKey1, XorKey);
@@ -269,8 +268,7 @@ struct IndirectGlobalVariable : public FunctionPass {
             if (XorKeys) {
               Value *XorKeysGEP = IRB.CreateGEP(XorKeys->getValueType(), XorKeys, {Zero, Idx});
 
-              Value *XorKey = IRB.CreateLoad(intType, XorKeysGEP);
-              dyn_cast<LoadInst>(XorKey)->setVolatile(true);
+              Value *XorKey = IRB.CreateLoad(intType, XorKeysGEP, true);
 
               XorKey = IRB.CreateNSWNeg(XorKey);
               XorKey = IRB.CreateXor(XorKey, EncKey1);
@@ -309,8 +307,7 @@ struct IndirectGlobalVariable : public FunctionPass {
 
             Value *DecKey = EncKey;
             if (GXorKey) {
-              LoadInst *XorKey = IRB.CreateLoad(GXorKey->getValueType(), GXorKey);
-              XorKey->setVolatile(true);
+              LoadInst *XorKey = IRB.CreateLoad(GXorKey->getValueType(), GXorKey, true);
 
               if (opt.level() == 1) {
                 DecKey = IRB.CreateXor(EncKey1, XorKey);
@@ -324,8 +321,7 @@ struct IndirectGlobalVariable : public FunctionPass {
             if (XorKeys) {
               Value *XorKeysGEP = IRB.CreateGEP(XorKeys->getValueType(), XorKeys, {Zero, Idx});
 
-              Value *XorKey = IRB.CreateLoad(intType, XorKeysGEP);
-              dyn_cast<LoadInst>(XorKey)->setVolatile(true);
+              Value *XorKey = IRB.CreateLoad(intType, XorKeysGEP, true);
 
               XorKey = IRB.CreateNSWNeg(XorKey);
               XorKey = IRB.CreateXor(XorKey, EncKey1);
