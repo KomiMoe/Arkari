@@ -260,7 +260,7 @@ struct IndirectCall : public FunctionPass {
       Value *DecKey = EncKey;
 
       if (GXorKey) {
-        LoadInst *XorKey = IRB.CreateLoad(GXorKey->getValueType(), GXorKey, true);
+        LoadInst *XorKey = IRB.CreateLoad(GXorKey->getValueType(), GXorKey);
 
         if (opt.level() == 1) {
           DecKey = IRB.CreateXor(EncKey1, XorKey);
@@ -274,7 +274,7 @@ struct IndirectCall : public FunctionPass {
       if (XorKeys) {
         Value *XorKeysGEP = IRB.CreateGEP(XorKeys->getValueType(), XorKeys, {Zero, Idx});
         
-        Value *XorKey = IRB.CreateLoad(intType, XorKeysGEP, true);
+        Value *XorKey = IRB.CreateLoad(intType, XorKeysGEP);
 
         XorKey = IRB.CreateNSWNeg(XorKey);
         XorKey = IRB.CreateXor(XorKey, EncKey1);
