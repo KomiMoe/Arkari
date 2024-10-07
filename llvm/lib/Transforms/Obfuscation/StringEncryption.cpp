@@ -170,7 +170,7 @@ bool StringEncryption::runOnModule(Module &M) {
   }
 
   Constant *CDA = ConstantDataArray::get(M.getContext(), ArrayRef<uint8_t>(Data));
-  EncryptedStringTable = new GlobalVariable(M, CDA->getType(), true, GlobalValue::PrivateLinkage,
+  EncryptedStringTable = new GlobalVariable(M, CDA->getType(), false, GlobalValue::PrivateLinkage,
                                             CDA, "EncryptedStringTable");
 
   // decrypt string back at every use, change the plain string use to the decrypted one
@@ -248,7 +248,6 @@ Function *StringEncryption::buildDecryptFunction(Module *M, const StringEncrypti
   PlainString->addAttr(Attribute::NoCapture);
   Data->setName("data");
   Data->addAttr(Attribute::NoCapture);
-  Data->addAttr(Attribute::ReadOnly);
 
   BasicBlock *Enter = BasicBlock::Create(Ctx, "Enter", DecFunc);
   BasicBlock *LoopBody = BasicBlock::Create(Ctx, "LoopBody", DecFunc);
@@ -270,7 +269,7 @@ Function *StringEncryption::buildDecryptFunction(Module *M, const StringEncrypti
   Value *EncCharPtr =
       IRB.CreateInBoundsGEP(IRB.getInt8Ty(), EncPtr,
       LoopCounter);
-  Value *EncChar = IRB.CreateLoad(IRB.getInt8Ty(), EncCharPtr);
+  Value *EncChar = IRB.CreateLoad(IRB.getInt8Ty(), EncCharPtr, true);
   Value *KeyIdx = IRB.CreateURem(LoopCounter, KeySize);
 
   Value *KeyCharPtr = IRB.CreateInBoundsGEP(IRB.getInt8Ty(), Data, KeyIdx);
