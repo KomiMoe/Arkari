@@ -57,6 +57,8 @@ $ make
 
 annotate的优先级永远高于命令行参数
 
+字符串加密基于LLVM Module，所以必须在编译选项中加入字符串加密选项，否则不会开启
+
 可用的annotate:
 - fla
 - icall
