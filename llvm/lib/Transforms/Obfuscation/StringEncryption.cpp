@@ -131,8 +131,22 @@ bool StringEncryption::runOnModule(Module &M) {
   // encrypt those strings, build corresponding decrypt function
   for (CSPEntry *Entry: ConstantStringPool) {
     getRandomBytes(Entry->EncKey, 16, 32);
+    uint8_t LastPlainChar = 0;
     for (unsigned i = 0; i < Entry->Data.size(); ++i) {
-      Entry->Data[i] ^= Entry->EncKey[i % Entry->EncKey.size()];
+      const uint32_t KeyIndex = i % Entry->EncKey.size();
+      const uint8_t CurrentKey = Entry->EncKey[KeyIndex];
+      const uint8_t CurrentPlainChar = Entry->Data[i];
+      Entry->Data[i] ^= CurrentKey;
+      if ((KeyIndex * CurrentKey) % 2 == 0) {
+        Entry->Data[i] = ~Entry->Data[i];
+        Entry->Data[i] ^= CurrentKey;
+        Entry->Data[i] = Entry->Data[i] - LastPlainChar;
+      } else {
+        Entry->Data[i] = -Entry->Data[i];
+        Entry->Data[i] ^= CurrentKey;
+        Entry->Data[i] = Entry->Data[i] + LastPlainChar;
+      }
+      LastPlainChar = CurrentPlainChar;
     }
     Entry->DecFunc = buildDecryptFunction(&M, Entry);
   }
@@ -224,8 +238,23 @@ void StringEncryption::getRandomBytes(std::vector<uint8_t> &Bytes, uint32_t MinS
 //  uint32_t key_size = 1234;
 //  uint8_t *es = (uint8_t *) &data[key_size];
 //  uint32_t i;
+//  uint8_t last_decrypted_char = 0;
 //  for (i = 0;i < 5678;i ++) {
-//    plain_string[i] = es[i] ^ key[i % key_size];
+//    uint32_t key_index = i % key_size;
+//    uint8_t current_key = key[key_index];
+//    uint8_t ds;
+//    if ((key_index * current_key) % 2 == 0) {
+//      ds = es[i] + last_decrypted_char;
+//      ds = ds ^ current_key;
+//      ds = ~ds;
+//    } else {
+//      ds = es[i] - last_decrypted_char;
+//      ds = ds ^ current_key;
+//      ds = -ds;
+//    }
+//    ds = ds ^ current_key;
+//    last_decrypted_char = ds;
+//    plain_string[i] = ds;
 //  }
 //}
 
@@ -251,6 +280,9 @@ Function *StringEncryption::buildDecryptFunction(Module *M, const StringEncrypti
 
   BasicBlock *Enter = BasicBlock::Create(Ctx, "Enter", DecFunc);
   BasicBlock *LoopBody = BasicBlock::Create(Ctx, "LoopBody", DecFunc);
+  BasicBlock *LoopBr0 = BasicBlock::Create(Ctx, "LoopBr0", DecFunc);
+  BasicBlock *LoopBr1 = BasicBlock::Create(Ctx, "LoopBr1", DecFunc);
+  BasicBlock *LoopEnd = BasicBlock::Create(Ctx, "LoopEnd", DecFunc);
   BasicBlock *UpdateDecStatus = BasicBlock::Create(Ctx, "UpdateDecStatus", DecFunc);
   BasicBlock *Exit = BasicBlock::Create(Ctx, "Exit", DecFunc);
 
@@ -266,6 +298,9 @@ Function *StringEncryption::buildDecryptFunction(Module *M, const StringEncrypti
   PHINode *LoopCounter = IRB.CreatePHI(IRB.getInt32Ty(), 2);
   LoopCounter->addIncoming(IRB.getInt32(0), Enter);
 
+  PHINode *LastDecrypted = IRB.CreatePHI(IRB.getInt8Ty(), 2);
+  LastDecrypted->addIncoming(IRB.getInt8(0), Enter);
+
   Value *EncCharPtr =
       IRB.CreateInBoundsGEP(IRB.getInt8Ty(), EncPtr,
       LoopCounter);
@@ -275,13 +310,42 @@ Function *StringEncryption::buildDecryptFunction(Module *M, const StringEncrypti
   Value *KeyCharPtr = IRB.CreateInBoundsGEP(IRB.getInt8Ty(), Data, KeyIdx);
   Value *KeyChar = IRB.CreateLoad(IRB.getInt8Ty(), KeyCharPtr);
 
-  Value *DecChar = IRB.CreateXor(EncChar, KeyChar);
+  //====================Initialized=========================
+
+  Value *BrKey = IRB.CreateAnd(IRB.CreateMul(KeyIdx, IRB.CreateZExt(KeyChar, KeyIdx->getType(), "", true), "", true, true), IRB.getInt32(1));
+  Value *BrCond = IRB.CreateICmpEQ(BrKey, IRB.getInt32(0));
+  // If zero, %2 == 0;
+  IRB.CreateCondBr(BrCond, LoopBr0, LoopBr1);
+
+  // Loop0 Start - %2 == 0;
+  IRB.SetInsertPoint(LoopBr0);
+  Value *DecChar0 = IRB.CreateAdd(EncChar, LastDecrypted);
+  DecChar0 = IRB.CreateXor(DecChar0, KeyChar);
+  DecChar0 = IRB.CreateNot(DecChar0);
+  IRB.CreateBr(LoopEnd);
+
+  // Loop1 Start - %2 == 1;
+  IRB.SetInsertPoint(LoopBr1);
+  Value *DecChar1 = IRB.CreateSub(EncChar, LastDecrypted);
+  DecChar1 = IRB.CreateXor(DecChar1, KeyChar);
+  DecChar1 = IRB.CreateNeg(DecChar1);
+  IRB.CreateBr(LoopEnd);
+
+  // LoopEnd and finally decrypt current char
+  IRB.SetInsertPoint(LoopEnd);
+  PHINode *BrDecChar = IRB.CreatePHI(IRB.getInt8Ty(), 2);
+  BrDecChar->addIncoming(DecChar0, LoopBr0);
+  BrDecChar->addIncoming(DecChar1, LoopBr1);
+  Value *DecChar = IRB.CreateXor(BrDecChar, KeyChar);
+
+  //Store
+  LastDecrypted->addIncoming(DecChar, LoopEnd);
   Value *DecCharPtr = IRB.CreateInBoundsGEP(IRB.getInt8Ty(),
       PlainString, LoopCounter);
   IRB.CreateStore(DecChar, DecCharPtr);
 
   Value *NewCounter = IRB.CreateAdd(LoopCounter, IRB.getInt32(1), "", true, true);
-  LoopCounter->addIncoming(NewCounter, LoopBody);
+  LoopCounter->addIncoming(NewCounter, LoopEnd);
 
   Value *Cond = IRB.CreateICmpEQ(NewCounter, IRB.getInt32(static_cast<uint32_t>(Entry->Data.size())));
   IRB.CreateCondBr(Cond, UpdateDecStatus, LoopBody);
