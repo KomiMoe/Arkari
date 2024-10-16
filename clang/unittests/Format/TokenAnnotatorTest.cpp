@@ -3394,6 +3394,18 @@ TEST_F(TokenAnnotatorTest, SplitPenalty) {
   EXPECT_SPLIT_PENALTY(Tokens[7], 23u);
 }
 
+TEST_F(TokenAnnotatorTest, TemplateInstantiation) {
+  auto Tokens = annotate("return FixedInt<N | M>();");
+  ASSERT_EQ(Tokens.size(), 11u) << Tokens;
+  EXPECT_TOKEN(Tokens[2], tok::less, TT_TemplateOpener);
+  EXPECT_TOKEN(Tokens[6], tok::greater, TT_TemplateCloser);
+
+  Tokens = annotate("return std::conditional_t<T::value == U::value, T, U>{};");
+  ASSERT_EQ(Tokens.size(), 21u) << Tokens;
+  EXPECT_TOKEN(Tokens[4], tok::less, TT_TemplateOpener);
+  EXPECT_TOKEN(Tokens[16], tok::greater, TT_TemplateCloser);
+}
+
 } // namespace
 } // namespace format
 } // namespace clang
