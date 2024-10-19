@@ -115,7 +115,7 @@ struct IndirectGlobalVariable : public FunctionPass {
     for (auto GVar:GlobalVariables) {
       Constant *CE = ConstantExpr::getBitCast(
         GVar, PointerType::getUnqual(F.getContext()));
-      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getNSWMul(XorKey, ConstantInt::get(intType, GVNumbering[GVar], false))));
+      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getMul(XorKey, ConstantInt::get(intType, GVNumbering[GVar], false))));
       Elements.push_back(CE);
     }
 
@@ -150,12 +150,12 @@ struct IndirectGlobalVariable : public FunctionPass {
 
       Constant *CE = ConstantExpr::getBitCast(
         GVar, PointerType::getUnqual(F.getContext()));
-      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getNSWMul(XorKey, ConstantInt::get(intType, GVNumbering[GVar], false))));
+      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getMul(XorKey, ConstantInt::get(intType, GVNumbering[GVar], false))));
       Elements.push_back(CE);
 
-      XorKey = ConstantExpr::getNSWNeg(XorKey);
+      XorKey = ConstantExpr::getNeg(XorKey);
       XorKey = ConstantExpr::getXor(XorKey, AddKey);
-      XorKey = ConstantExpr::getNSWNeg(XorKey);
+      XorKey = ConstantExpr::getNeg(XorKey);
       XorKeys.push_back(XorKey);
     }
 
@@ -258,10 +258,10 @@ struct IndirectGlobalVariable : public FunctionPass {
 
               if (opt.level() == 1) {
                 DecKey = IRB.CreateXor(EncKey1, XorKey);
-                DecKey = IRB.CreateNSWNeg(DecKey);
+                DecKey = IRB.CreateNeg(DecKey);
               } else if (opt.level() == 2) {
-                DecKey = IRB.CreateXor(EncKey1, IRB.CreateNSWMul(XorKey, Idx));
-                DecKey = IRB.CreateNSWNeg(DecKey);
+                DecKey = IRB.CreateXor(EncKey1, IRB.CreateMul(XorKey, Idx));
+                DecKey = IRB.CreateNeg(DecKey);
               }
             }
 
@@ -270,12 +270,12 @@ struct IndirectGlobalVariable : public FunctionPass {
 
               Value *XorKey = IRB.CreateLoad(intType, XorKeysGEP);
 
-              XorKey = IRB.CreateNSWNeg(XorKey);
+              XorKey = IRB.CreateNeg(XorKey);
               XorKey = IRB.CreateXor(XorKey, EncKey1);
-              XorKey = IRB.CreateNSWNeg(XorKey);
+              XorKey = IRB.CreateNeg(XorKey);
 
-              DecKey = IRB.CreateXor(EncKey1, IRB.CreateNSWMul(XorKey, Idx));
-              DecKey = IRB.CreateNSWNeg(DecKey);
+              DecKey = IRB.CreateXor(EncKey1, IRB.CreateMul(XorKey, Idx));
+              DecKey = IRB.CreateNeg(DecKey);
             }
 
             Value *GVAddr = IRB.CreateGEP(
@@ -311,10 +311,10 @@ struct IndirectGlobalVariable : public FunctionPass {
 
               if (opt.level() == 1) {
                 DecKey = IRB.CreateXor(EncKey1, XorKey);
-                DecKey = IRB.CreateNSWNeg(DecKey);
+                DecKey = IRB.CreateNeg(DecKey);
               } else if (opt.level() == 2) {
-                DecKey = IRB.CreateXor(EncKey1, IRB.CreateNSWMul(XorKey, Idx));
-                DecKey = IRB.CreateNSWNeg(DecKey);
+                DecKey = IRB.CreateXor(EncKey1, IRB.CreateMul(XorKey, Idx));
+                DecKey = IRB.CreateNeg(DecKey);
               }
             }
 
@@ -323,12 +323,12 @@ struct IndirectGlobalVariable : public FunctionPass {
 
               Value *XorKey = IRB.CreateLoad(intType, XorKeysGEP);
 
-              XorKey = IRB.CreateNSWNeg(XorKey);
+              XorKey = IRB.CreateNeg(XorKey);
               XorKey = IRB.CreateXor(XorKey, EncKey1);
-              XorKey = IRB.CreateNSWNeg(XorKey);
+              XorKey = IRB.CreateNeg(XorKey);
 
-              DecKey = IRB.CreateXor(EncKey1, IRB.CreateNSWMul(XorKey, Idx));
-              DecKey = IRB.CreateNSWNeg(DecKey);
+              DecKey = IRB.CreateXor(EncKey1, IRB.CreateMul(XorKey, Idx));
+              DecKey = IRB.CreateNeg(DecKey);
             }
 
             Value *GVAddr = IRB.CreateGEP(

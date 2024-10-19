@@ -127,7 +127,7 @@ struct IndirectCall : public FunctionPass {
     for (auto Callee:Callees) {
       Constant *CE = ConstantExpr::getBitCast(
         Callee, PointerType::getUnqual(F.getContext()));
-      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getNSWMul(XorKey, ConstantInt::get(intType, CalleeNumbering[Callee], false))));
+      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getMul(XorKey, ConstantInt::get(intType, CalleeNumbering[Callee], false))));
       Elements.push_back(CE);
     }
 
@@ -165,11 +165,11 @@ struct IndirectCall : public FunctionPass {
 
       Constant *CE = ConstantExpr::getBitCast(
         Callee, PointerType::getUnqual(F.getContext()));
-      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getNSWMul(XorKey, ConstantInt::get(intType, CalleeNumbering[Callee], false))));
+      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getMul(XorKey, ConstantInt::get(intType, CalleeNumbering[Callee], false))));
 
-      XorKey = ConstantExpr::getNSWNeg(XorKey);
+      XorKey = ConstantExpr::getNeg(XorKey);
       XorKey = ConstantExpr::getXor(XorKey, AddKey);
-      XorKey = ConstantExpr::getNSWNeg(XorKey);
+      XorKey = ConstantExpr::getNeg(XorKey);
       XorKeys.push_back(XorKey);
       Elements.push_back(CE);
     }
@@ -264,10 +264,10 @@ struct IndirectCall : public FunctionPass {
 
         if (opt.level() == 1) {
           DecKey = IRB.CreateXor(EncKey1, XorKey);
-          DecKey = IRB.CreateNSWNeg(DecKey);
+          DecKey = IRB.CreateNeg(DecKey);
         } else if (opt.level() == 2) {
-          DecKey = IRB.CreateXor(EncKey1, IRB.CreateNSWMul(XorKey, Idx));
-          DecKey = IRB.CreateNSWNeg(DecKey);
+          DecKey = IRB.CreateXor(EncKey1, IRB.CreateMul(XorKey, Idx));
+          DecKey = IRB.CreateNeg(DecKey);
         }
       }
 
@@ -276,12 +276,12 @@ struct IndirectCall : public FunctionPass {
         
         Value *XorKey = IRB.CreateLoad(intType, XorKeysGEP);
 
-        XorKey = IRB.CreateNSWNeg(XorKey);
+        XorKey = IRB.CreateNeg(XorKey);
         XorKey = IRB.CreateXor(XorKey, EncKey1);
-        XorKey = IRB.CreateNSWNeg(XorKey);
+        XorKey = IRB.CreateNeg(XorKey);
 
-        DecKey = IRB.CreateXor(EncKey1, IRB.CreateNSWMul(XorKey, Idx));
-        DecKey = IRB.CreateNSWNeg(DecKey);
+        DecKey = IRB.CreateXor(EncKey1, IRB.CreateMul(XorKey, Idx));
+        DecKey = IRB.CreateNeg(DecKey);
       }
 
       Value *DestAddr = IRB.CreateGEP(Type::getInt8Ty(Ctx),

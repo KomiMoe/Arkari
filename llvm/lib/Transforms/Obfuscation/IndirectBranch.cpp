@@ -118,7 +118,7 @@ struct IndirectBranch : public FunctionPass {
     std::vector<Constant *> Elements;
     for (auto BB:BBTargets) {
       Constant *CE = ConstantExpr::getBitCast(BlockAddress::get(BB), PointerType::getUnqual(F.getContext()));
-      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getNSWMul(XorKey, ConstantInt::get(intType, BBNumbering[BB], false))));
+      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getMul(XorKey, ConstantInt::get(intType, BBNumbering[BB], false))));
       Elements.push_back(CE);
     }
 
@@ -153,11 +153,11 @@ struct IndirectBranch : public FunctionPass {
       uint64_t V = RandomEngine.get_uint64_t();
       Constant *XorKey = ConstantInt::get(intType, V, false);
       Constant *CE = ConstantExpr::getBitCast(BlockAddress::get(BB), PointerType::getUnqual(F.getContext()));
-      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getNSWMul(XorKey, ConstantInt::get(intType, BBNumbering[BB], false))));
+      CE = ConstantExpr::getGetElementPtr(Type::getInt8Ty(F.getContext()), CE, ConstantExpr::getXor(AddKey, ConstantExpr::getMul(XorKey, ConstantInt::get(intType, BBNumbering[BB], false))));
 
-      XorKey = ConstantExpr::getNSWNeg(XorKey);
+      XorKey = ConstantExpr::getNeg(XorKey);
       XorKey = ConstantExpr::getXor(XorKey, AddKey);
-      XorKey = ConstantExpr::getNSWNeg(XorKey);
+      XorKey = ConstantExpr::getNeg(XorKey);
       XorKeys.push_back(XorKey);
       Elements.push_back(CE);
     }
@@ -264,10 +264,10 @@ struct IndirectBranch : public FunctionPass {
 
           if (opt.level() == 1) {
             DecKey = IRB.CreateXor(EncKey1, XorKey);
-            DecKey = IRB.CreateNSWNeg(DecKey);
+            DecKey = IRB.CreateNeg(DecKey);
           } else if (opt.level() == 2) {
-            DecKey = IRB.CreateXor(EncKey1, IRB.CreateNSWMul(XorKey, Idx));
-            DecKey = IRB.CreateNSWNeg(DecKey);
+            DecKey = IRB.CreateXor(EncKey1, IRB.CreateMul(XorKey, Idx));
+            DecKey = IRB.CreateNeg(DecKey);
           }
         }
 
@@ -276,12 +276,12 @@ struct IndirectBranch : public FunctionPass {
 
           Value *XorKey = IRB.CreateLoad(intType, XorKeysGEP);
 
-          XorKey = IRB.CreateNSWNeg(XorKey);
+          XorKey = IRB.CreateNeg(XorKey);
           XorKey = IRB.CreateXor(XorKey, EncKey1);
-          XorKey = IRB.CreateNSWNeg(XorKey);
+          XorKey = IRB.CreateNeg(XorKey);
 
-          DecKey = IRB.CreateXor(EncKey1, IRB.CreateNSWMul(XorKey, Idx));
-          DecKey = IRB.CreateNSWNeg(DecKey);
+          DecKey = IRB.CreateXor(EncKey1, IRB.CreateMul(XorKey, Idx));
+          DecKey = IRB.CreateNeg(DecKey);
         }
 
         Value *DestAddr = IRB.CreateGEP(
