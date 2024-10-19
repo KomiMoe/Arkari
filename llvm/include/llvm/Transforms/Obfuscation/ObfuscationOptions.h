@@ -56,15 +56,17 @@ protected:
   ObfOpt* IndGvOpt = nullptr;
   ObfOpt* FlaOpt   = nullptr;
   ObfOpt* CseOpt   = nullptr;
+  ObfOpt* CieOpt   = nullptr;
   
 
 public:
-  ObfuscationOptions(ObfOpt* indBrOpt,  ObfOpt* iCallOpt, ObfOpt* indGvOpt, ObfOpt* flaOpt, ObfOpt* cseOpt) {
+  ObfuscationOptions(ObfOpt* indBrOpt,  ObfOpt* iCallOpt, ObfOpt* indGvOpt, ObfOpt* flaOpt, ObfOpt* cseOpt, ObfOpt* cieOpt) {
     this->IndBrOpt = indBrOpt;
     this->ICallOpt = iCallOpt;
     this->IndGvOpt = indGvOpt;
     this->FlaOpt   = flaOpt;
     this->CseOpt   = cseOpt;
+    this->CieOpt   = cieOpt;
   }
 
   auto indBrOpt() const {
@@ -85,6 +87,10 @@ public:
 
   auto cseOpt() const {
     return CseOpt;
+  }
+
+  auto cieOpt() const {
+    return CieOpt;
   }
 
   static ObfOpt toObfuscate(const ObfOpt* option, Function* f);

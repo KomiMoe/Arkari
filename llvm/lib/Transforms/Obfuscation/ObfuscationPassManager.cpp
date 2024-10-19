@@ -6,6 +6,7 @@
 #include "llvm/Transforms/Obfuscation/ObfuscationOptions.h"
 #include "llvm/IR/Module.h"
 
+
 #define DEBUG_TYPE "ir-obfuscation"
 
 using namespace llvm;
@@ -52,6 +53,16 @@ static cl::opt<bool>
 EnableIRStringEncryption("irobf-cse", cl::init(false), cl::NotHidden,
                          cl::desc("Enable IR Constant String Encryption."),
                          cl::ZeroOrMore);
+
+static cl::opt<bool>
+EnableIRConstantIntEncryption("irobf-cie", cl::init(false), cl::NotHidden,
+  cl::desc("Enable IR Constant Integer Encryption."),
+  cl::ZeroOrMore);
+
+static cl::opt<uint32_t> LevelIRConstantIntEncryption(
+  "level-cie", cl::init(0), cl::NotHidden,
+  cl::desc("Set IR Constant Integer Encryption Level."),
+  cl::ZeroOrMore);
 
 namespace llvm {
 
@@ -115,14 +126,15 @@ struct ObfuscationPassManager : public ModulePass {
         new ObfOpt{EnableIndirectCall, LevelIndirectCall, "icall"},
         new ObfOpt{EnableIndirectGV, LevelIndirectGV, "indgv"},
         new ObfOpt{EnableIRFlattening, 0, "fla"},
-        new ObfOpt{EnableIRStringEncryption, 0, "cse"}};
+        new ObfOpt{EnableIRStringEncryption, 0, "cse"},
+        new ObfOpt{EnableIRConstantIntEncryption, LevelIRConstantIntEncryption, "cie"}};
     return Options;
   }
 
   bool runOnModule(Module &M) override {
 
     if (EnableIndirectBr || EnableIndirectCall || EnableIndirectGV ||
-        EnableIRFlattening || EnableIRStringEncryption) {
+        EnableIRFlattening || EnableIRStringEncryption || EnableIRConstantIntEncryption) {
       EnableIRObfuscation = true;
     }
 
@@ -133,6 +145,8 @@ struct ObfuscationPassManager : public ModulePass {
     std::unique_ptr<ObfuscationOptions> Options(getOptions());
     unsigned pointerSize = M.getDataLayout().getTypeAllocSize(
         PointerType::getUnqual(M.getContext()));
+
+    add(llvm::createConstantIntEncryptionPass(Options.get()));
     if (EnableIRStringEncryption || Options->cseOpt()->isEnabled()) {
       add(llvm::createStringEncryptionPass(Options.get()));
     }
