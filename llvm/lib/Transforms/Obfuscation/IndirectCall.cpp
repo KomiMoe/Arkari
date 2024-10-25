@@ -246,7 +246,7 @@ struct IndirectCall : public FunctionPass {
       CallBase *CB = CI;
 
       Function *Callee = CB->getCalledFunction();
-      FunctionType *FTy = CB->getFunctionType();
+      FunctionType *FTy = Callee->getFunctionType();
       IRBuilder<> IRB(CB);
 
       Value *Idx = ConstantInt::get(intType, CalleeNumbering[CB->getCalledFunction()]);
