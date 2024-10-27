@@ -5,6 +5,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/EHPersonalities.h"
+#include "llvm/IR/NoFolder.h"
 
 // Shamefully borrowed from ../Scalar/RegToMem.cpp :(
 bool valueEscapes(Instruction *Inst) {
@@ -136,4 +137,42 @@ void LowerConstantExpr(Function &F) {
       }
     }
   }
+}
+
+bool expandConstantExpr(Function &F) {
+  bool                Changed = false;
+  LLVMContext &       Ctx = F.getContext();
+  IRBuilder<NoFolder> IRB(Ctx);
+
+  for (auto &BB : F) {
+    for (auto &I : BB) {
+      if (I.isEHPad() || isa<AllocaInst>(&I) || isa<IntrinsicInst>(&I) ||
+        isa<SwitchInst>(&I) || I.isAtomic()) {
+        continue;
+      }
+      auto CI = dyn_cast<CallInst>(&I);
+      auto GEP = dyn_cast<GetElementPtrInst>(&I);
+      auto IsPhi = isa<PHINode>(&I);
+      auto InsertPt = IsPhi
+        ? F.getEntryBlock().getFirstInsertionPt()
+        : I.getIterator();
+      for (unsigned i = 0; i < I.getNumOperands(); ++i) {
+        if (CI && CI->isBundleOperand(i)) {
+          continue;
+        }
+        if (GEP && (i < 2 || GEP->getSourceElementType()->isStructTy())) {
+          continue;
+        }
+        auto Opr = I.getOperand(i);
+        if (auto CEP = dyn_cast<ConstantExpr>(Opr)) {
+          IRB.SetInsertPoint(InsertPt);
+          auto CEPInst = CEP->getAsInstruction();
+          IRB.Insert(CEPInst);
+          I.setOperand(i, CEPInst);
+          Changed = true;
+        }
+      }
+    }
+  }
+  return Changed;
 }

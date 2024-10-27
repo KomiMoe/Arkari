@@ -11,5 +11,6 @@ bool valueEscapes(Instruction *Inst);
 void fixStack(Function *f);
 CallBase* fixEH(CallBase* CB);
 void LowerConstantExpr(Function &F);
+bool expandConstantExpr(Function &F);
 
 #endif
