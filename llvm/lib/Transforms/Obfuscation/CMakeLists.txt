@@ -10,6 +10,7 @@ add_llvm_library(LLVMObfuscation
   StringEncryption.cpp
   LegacyLowerSwitch.cpp
   ConstantIntEncryption.cpp
+  ConstantFPEncryption.cpp
   
   ADDITIONAL_HEADER_DIRS
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Transforms/Obfuscation

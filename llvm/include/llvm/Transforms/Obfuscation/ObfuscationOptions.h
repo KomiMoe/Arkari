@@ -12,12 +12,12 @@ SmallVector<std::string> readAnnotate(Function *f);
 
 class ObfOpt {
 protected:
-  uint32_t Enabled : 1;
-  uint32_t Level : 2;
+  uint32_t    Enabled : 1;
+  uint32_t    Level   : 2;
   std::string AttributeName;
 
 public:
-  ObfOpt(bool enable, uint32_t level, const std::string& attributeName) {
+  ObfOpt(bool enable, uint32_t level, const std::string &attributeName) {
     this->Enabled = enable;
     this->Level = std::min<uint32_t>(level, 3);
     this->AttributeName = attributeName;
@@ -39,34 +39,37 @@ public:
     return this->Level;
   }
 
-  const std::string& attributeName() const {
+  const std::string &attributeName() const {
     return this->AttributeName;
   }
 
   ObfOpt none() const {
-    return ObfOpt{ false, 0, this->attributeName() };
+    return ObfOpt{false, 0, this->attributeName()};
   }
 
 };
 
 class ObfuscationOptions {
 protected:
-  ObfOpt* IndBrOpt = nullptr;
-  ObfOpt* ICallOpt = nullptr;
-  ObfOpt* IndGvOpt = nullptr;
-  ObfOpt* FlaOpt   = nullptr;
-  ObfOpt* CseOpt   = nullptr;
-  ObfOpt* CieOpt   = nullptr;
-  
+  ObfOpt *IndBrOpt = nullptr;
+  ObfOpt *ICallOpt = nullptr;
+  ObfOpt *IndGvOpt = nullptr;
+  ObfOpt *FlaOpt = nullptr;
+  ObfOpt *CseOpt = nullptr;
+  ObfOpt *CieOpt = nullptr;
+  ObfOpt *CfeOpt = nullptr;
 
 public:
-  ObfuscationOptions(ObfOpt* indBrOpt,  ObfOpt* iCallOpt, ObfOpt* indGvOpt, ObfOpt* flaOpt, ObfOpt* cseOpt, ObfOpt* cieOpt) {
+  ObfuscationOptions(ObfOpt *indBrOpt, ObfOpt *iCallOpt, ObfOpt *indGvOpt,
+                     ObfOpt *flaOpt, ObfOpt *  cseOpt, ObfOpt *  cieOpt,
+                     ObfOpt *cfeOpt) {
     this->IndBrOpt = indBrOpt;
     this->ICallOpt = iCallOpt;
     this->IndGvOpt = indGvOpt;
-    this->FlaOpt   = flaOpt;
-    this->CseOpt   = cseOpt;
-    this->CieOpt   = cieOpt;
+    this->FlaOpt = flaOpt;
+    this->CseOpt = cseOpt;
+    this->CieOpt = cieOpt;
+    this->CfeOpt = cfeOpt;
   }
 
   auto indBrOpt() const {
@@ -93,7 +96,11 @@ public:
     return CieOpt;
   }
 
-  static ObfOpt toObfuscate(const ObfOpt* option, Function* f);
+  auto cfeOpt() const {
+    return CfeOpt;
+  }
+
+  static ObfOpt toObfuscate(const ObfOpt *option, Function *f);
 
 };
 
