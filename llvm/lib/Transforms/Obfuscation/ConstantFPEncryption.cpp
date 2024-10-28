@@ -65,6 +65,142 @@ struct ConstantFPEncryption : public FunctionPass {
     return NewOpr;
   }
 
+  Value *createConstantFPEncrypt1(BasicBlock::iterator ip, ConstantFP *CFP) {
+    const auto  Module = ip->getModule();
+    auto &LLVMContent = Module->getContext();
+
+    IRBuilder<NoFolder> IRB(ip->getContext());
+    IRB.SetInsertPoint(ip);
+    const auto FPWidth = CFP->getType()->getPrimitiveSizeInBits().
+      getFixedValue();
+
+
+    const auto Key = ConstantInt::get(
+      IntegerType::get(LLVMContent, FPWidth),
+      RandomEngine.get_uint64_t());
+
+    const auto XorKey = ConstantInt::get(Key->getType(),
+      RandomEngine.get_uint64_t());
+
+
+    const auto FPInt = ConstantExpr::getBitCast(CFP, Key->getType());
+
+    auto Enc = ConstantExpr::getSub(FPInt, Key);
+    Enc = ConstantExpr::getXor(Enc, XorKey);
+
+    auto       GV = new GlobalVariable(*Module, Enc->getType(), false,
+      GlobalValue::LinkageTypes::PrivateLinkage,
+      Enc);
+    appendToCompilerUsed(*Module, {GV});
+
+    auto GXorKey = new GlobalVariable(*Module, XorKey->getType(), false,
+      GlobalValue::LinkageTypes::PrivateLinkage,
+      XorKey);
+    appendToCompilerUsed(*Module, {GXorKey});
+
+    // outs() << I << " ->\n";
+    const auto Load = IRB.CreateLoad(Enc->getType(), GV);
+    const auto LoadXor = IRB.CreateLoad(XorKey->getType(), GXorKey);
+    const auto XorOpr = IRB.CreateXor(Load, LoadXor);
+    const auto Add = IRB.CreateAdd(Key, XorOpr);
+    const auto NewOpr = IRB.CreateBitCast(Add, CFP->getType());
+    return NewOpr;
+  }
+
+  Value *createConstantFPEncrypt2(BasicBlock::iterator ip, ConstantFP *CFP) {
+    const auto  Module = ip->getModule();
+    auto &LLVMContent = Module->getContext();
+
+    IRBuilder<NoFolder> IRB(ip->getContext());
+    IRB.SetInsertPoint(ip);
+    const auto FPWidth = CFP->getType()->getPrimitiveSizeInBits().
+      getFixedValue();
+
+
+    const auto Key = ConstantInt::get(
+      IntegerType::get(LLVMContent, FPWidth),
+      RandomEngine.get_uint64_t());
+
+    const auto XorKey = ConstantInt::get(Key->getType(),
+      RandomEngine.get_uint64_t());
+    const auto MulXorKey = ConstantExpr::getMul(Key, XorKey);
+
+    const auto FPInt = ConstantExpr::getBitCast(CFP, Key->getType());
+
+    auto Enc = ConstantExpr::getSub(FPInt, Key);
+    Enc = ConstantExpr::getXor(Enc, MulXorKey);
+
+    auto       GV = new GlobalVariable(*Module, Enc->getType(), false,
+      GlobalValue::LinkageTypes::PrivateLinkage,
+      Enc);
+    appendToCompilerUsed(*Module, {GV});
+
+    auto GXorKey = new GlobalVariable(*Module, XorKey->getType(), false,
+      GlobalValue::LinkageTypes::PrivateLinkage,
+      XorKey);
+    appendToCompilerUsed(*Module, {GXorKey});
+
+    // outs() << I << " ->\n";
+    const auto Load = IRB.CreateLoad(Enc->getType(), GV);
+    const auto LoadXor = IRB.CreateLoad(XorKey->getType(), GXorKey);
+    const auto MulOpr = IRB.CreateMul(Key, LoadXor);
+    const auto XorOpr = IRB.CreateXor(Load, MulOpr);
+    const auto Add = IRB.CreateAdd(Key, XorOpr);
+    const auto NewOpr = IRB.CreateBitCast(Add, CFP->getType());
+    return NewOpr;
+  }
+
+  Value *createConstantFPEncrypt3(BasicBlock::iterator ip, ConstantFP *CFP) {
+    const auto  Module = ip->getModule();
+    auto &LLVMContent = Module->getContext();
+
+    IRBuilder<NoFolder> IRB(ip->getContext());
+    IRB.SetInsertPoint(ip);
+    const auto FPWidth = CFP->getType()->getPrimitiveSizeInBits().
+      getFixedValue();
+
+
+    const auto Key = ConstantInt::get(
+      IntegerType::get(LLVMContent, FPWidth),
+      RandomEngine.get_uint64_t());
+
+    auto XorKey = ConstantInt::get(Key->getType(),
+      RandomEngine.get_uint64_t());
+    const auto MulXorKey = ConstantExpr::getMul(Key, XorKey);
+
+    const auto FPInt = ConstantExpr::getBitCast(CFP, Key->getType());
+
+    auto Enc = ConstantExpr::getSub(FPInt, Key);
+    Enc = ConstantExpr::getXor(Enc, MulXorKey);
+
+    XorKey = ConstantExpr::getNeg(XorKey);
+    XorKey = ConstantExpr::getXor(XorKey, Enc);
+    XorKey = ConstantExpr::getNeg(XorKey);
+
+    auto       GV = new GlobalVariable(*Module, Enc->getType(), false,
+      GlobalValue::LinkageTypes::PrivateLinkage,
+      Enc);
+    appendToCompilerUsed(*Module, {GV});
+
+    auto GXorKey = new GlobalVariable(*Module, XorKey->getType(), false,
+      GlobalValue::LinkageTypes::PrivateLinkage,
+      XorKey);
+    appendToCompilerUsed(*Module, {GXorKey});
+
+    // outs() << I << " ->\n";
+    const auto Load = IRB.CreateLoad(Enc->getType(), GV);
+    const auto LoadXor = IRB.CreateLoad(XorKey->getType(), GXorKey);
+    const auto XorKeyNegOpr = IRB.CreateNeg(LoadXor);
+    const auto XorKeyXorEnc = IRB.CreateXor(XorKeyNegOpr, Load);
+    const auto FinalXor = IRB.CreateNeg(XorKeyXorEnc);
+
+    const auto MulOpr = IRB.CreateMul(Key, FinalXor);
+    const auto XorOpr = IRB.CreateXor(Load, MulOpr);
+    const auto Add = IRB.CreateAdd(Key, XorOpr);
+    const auto NewOpr = IRB.CreateBitCast(Add, CFP->getType());
+    return NewOpr;
+  }
+
   bool runOnFunction(Function &F) override {
     const auto opt = ArgsOptions->toObfuscate(ArgsOptions->cfeOpt(), &F);
     if (!opt.isEnabled()) {
@@ -96,7 +232,16 @@ struct ConstantFPEncryption : public FunctionPass {
 
           auto Opr = I.getOperand(i);
           if (auto CFP = dyn_cast<ConstantFP>(Opr)) {
-            Value *NewOpr = createConstantFPEncrypt0(InsertPt, CFP);
+            Value *NewOpr;
+            if (opt.level() == 0) {
+              NewOpr = createConstantFPEncrypt0(InsertPt, CFP);
+            } else if (opt.level() == 1) {
+              NewOpr = createConstantFPEncrypt1(InsertPt, CFP);
+            } else if (opt.level() == 2) {
+              NewOpr = createConstantFPEncrypt2(InsertPt, CFP);
+            } else {
+              NewOpr = createConstantFPEncrypt3(InsertPt, CFP);
+            }
             I.setOperand(i, NewOpr);
             // outs() << I << "\n\n";
             Changed = true;
