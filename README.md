@@ -3,12 +3,14 @@ Yet another llvm based obfuscator based on [goron](https://github.com/amimo/goro
 
 当前支持特性：
  - 混淆过程间相关
- - 间接跳转,并加密跳转目标(-mllvm -irobf-indbr)
- - 间接函数调用,并加密目标函数地址(-mllvm -irobf-icall)
- - 间接全局变量引用,并加密变量地址(-mllvm -irobf-indgv)
- - 字符串(c string)加密功能(-mllvm -irobf-cse)
- - 过程相关控制流平坦混淆(-mllvm -irobf-cff)
- - 全部 (-mllvm -irobf-indbr -mllvm -irobf-icall -mllvm -irobf-indgv -mllvm -irobf-cse -mllvm -irobf-cff)
+ - 间接跳转,并加密跳转目标(`-mllvm -irobf-indbr`)
+ - 间接函数调用,并加密目标函数地址(`-mllvm -irobf-icall`)
+ - 间接全局变量引用,并加密变量地址(`-mllvm -irobf-indgv`)
+ - 字符串(c string)加密功能(`-mllvm -irobf-cse`)
+ - 过程相关控制流平坦混淆(`-mllvm -irobf-cff`)
+ - 整数常量加密(`-mllvm -irobf-cie`) (Win64-MT-19.1.3-obf1.6.0 or later)
+ - 浮点常量加密(`-mllvm -irobf-cfe`) (Win64-MT-19.1.3-obf1.6.0 or later)
+ - 全部 (`-mllvm -irobf-indbr -mllvm -irobf-icall -mllvm -irobf-indgv -mllvm -irobf-cse -mllvm -irobf-cff -mllvm -irobf-cie -mllvm -irobf-cfe`)
 
 对比于goron的改进：
  - 由于作者明确表示暂时(至少几万年吧)不会跟进llvm版本和不会继续更新. 所以有了这个版本(https://github.com/amimo/goron/issues/29)
@@ -52,18 +54,22 @@ $ ./configure
 $ make
 ```
 
-可以通过**annotate**对特定函数**开启/关闭**指定混淆选项：
+## 可以通过**annotate**对特定函数**开启/关闭**指定混淆选项：
 (Win64-19.1.0-rc3-obf1.5.0-rc2 or later)
 
-annotate的优先级永远高于命令行参数
+annotate的优先级**永远高于**命令行参数
+
+`+flag` 表示在当前函数启用某功能, `-flag` 表示在当前函数禁用某功能
 
 字符串加密基于LLVM Module，所以必须在编译选项中加入字符串加密选项，否则不会开启
 
-可用的annotate:
-- fla
-- icall
-- indbr
-- indgv
+可用的annotate  flag:
+- `fla`
+- `icall`
+- `indbr`
+- `indgv`
+- `cie`
+- `cfe`
 
 ```cpp
 //fla表示编译选项中的cff
@@ -82,7 +88,7 @@ int main(int argc, char** argv) {
 // 当然如果你不嫌麻烦也可以用 __attribute((__annotate__(("+indbr"))))
 ```
 
-如果你不希望对整个程序都启用Pass，那么你可以在编译命令行参数中只添加 **-mllvm -irobf** ，然后使用 **annotate** 控制需要混淆的函数，仅开启 **-irobf** 不使用 **annotate** 不会运行任何混淆Pass
+如果你不希望对整个程序都启用Pass，那么你可以在编译命令行参数中只添加 `-mllvm -irobf` ，然后使用 **annotate** 控制需要混淆的函数，仅开启 **-irobf** 不使用 **annotate** 不会运行任何混淆Pass
 
 当然，不添加任何混淆命令行参数的情况下，仅使用 **annotate** 也***不会***启用任何Pass
 
@@ -98,17 +104,22 @@ int fool(auto a, auto b){
 
 
 
-可以使用下列几种方法之一单独控制某个混淆Pass的强度
+## 可以使用下列几种方法之一单独控制某个混淆Pass的强度
 (Win64-19.1.0-rc3-obf1.5.1-rc5 or later)
 
 如果不指定强度则默认强度为0，annotate的优先级永远高于命令行参数
 
 可用的Pass:
-- icall(强度范围: 0-3)
-- indbr(强度范围: 0-3)
-- indgv(强度范围: 0-3)
+- `icall` (强度范围: 0-3)
+- `indbr` (强度范围: 0-3)
+- `indgv` (强度范围: 0-3)
+- `cie` (强度范围: 0-3)
+- `cfe` (强度范围: 0-3)
 
 1.通过**annotate**对特定函数指定混淆强度：
+
+ `^flag=1` 表示当前函数设置某功能强度等级(此处为1)
+ 
 ```cpp
 //^icall=表示指定icall的强度
 //+icall表示当前函数启用icall混淆, 如果你在命令行中启用了icall则无需添加+icall
@@ -122,7 +133,7 @@ int main() {
 
 2.通过命令行参数指定特定混淆Pass的强度
 
-Eg.间接函数调用,并加密目标函数地址,强度设置为3(-mllvm -irobf-icall -mllvm -level-icall=3)
+Eg.间接函数调用,并加密目标函数地址,强度设置为3(`-mllvm -irobf-icall -mllvm -level-icall=3`)
 
 ## Acknowledgements
 
